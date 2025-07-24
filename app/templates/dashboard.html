@@ -81,6 +81,8 @@
     (function() {
         'use strict';
 
+        console.log(">>> [DIAGNÓSTICO] Script principal iniciado.");
+
         const State = {
             categorias: [],
             categoriaSeleccionada: null,
@@ -91,14 +93,17 @@
             BASE_URL: '',
             async fetch(endpoint, options = {}) {
                 try {
+                    console.log(`>>> [DIAGNÓSTICO] API Fetch: Realizando petición a ${endpoint}`);
                     const response = await fetch(this.BASE_URL + endpoint, options);
                     if (!response.ok) {
                         const errorData = await response.json().catch(() => ({ error: 'Error de red o respuesta no válida.' }));
                         throw new Error(errorData.error || `Error HTTP ${response.status}`);
                     }
-                    return response.json();
+                    const data = await response.json();
+                    console.log(`>>> [DIAGNÓSTICO] API Fetch: Respuesta recibida de ${endpoint}`, data);
+                    return data;
                 } catch (error) {
-                    console.error(`Error en API (${endpoint}):`, error);
+                    console.error(`>>> [DIAGNÓSTICO] API Fetch: Error en petición a ${endpoint}`, error);
                     throw error;
                 }
             },
@@ -120,11 +125,13 @@
                 graficoCont: document.getElementById('contenedor-grafico'),
             },
             renderMensaje(tipo, texto) {
+                console.log(`>>> [DIAGNÓSTICO] renderMensaje: Tipo=${tipo}, Texto=${texto}`);
                 if (this.nodes.graficoCont) {
                     this.nodes.graficoCont.innerHTML = `<div class="mensaje ${tipo}">${texto}</div>`;
                 }
             },
             renderStats(stats) {
+                console.log(">>> [DIAGNÓSTICO] renderStats: Renderizando estadísticas generales.", stats);
                 this.nodes.stats.innerHTML = `
                     <div class="stat-item"><span class="stat-number">${(stats.total_productos || 0).toLocaleString()}</span><span class="stat-label">Productos Únicos</span></div>
                     <div class="stat-item"><span class="stat-number">${stats.total_categorias || 0}</span><span class="stat-label">Categorías</span></div>
@@ -138,22 +145,34 @@
                 this.nodes.listaCategorias.style.display = filtradas.length > 0 ? 'block' : 'none';
             },
             renderGrafico(data) {
+                console.log('[renderGrafico] - Iniciando. Datos recibidos:', data);
                 const { contenedorGrafico: cont } = this.nodes;
+
                 if (!cont) {
-                    console.error("Error: El contenedor del gráfico no fue encontrado en el DOM.");
+                    console.error("[renderGrafico] - ERROR CRÍTICO: El elemento 'contenedor-grafico' no existe en el DOM.");
                     return;
                 }
+                console.log('[renderGrafico] - Contenedor del gráfico encontrado.');
+
                 if (!data || !data.productos || !Array.isArray(data.productos) || data.productos.length === 0) {
+                    console.warn('[renderGrafico] - No hay productos para mostrar. Mostrando mensaje de información.');
                     this.renderMensaje('info', 'No hay productos para mostrar en esta categoría.');
                     return;
                 }
+                console.log('[renderGrafico] - Los datos son válidos y contienen productos.');
+
                 const baseHeight = 500;
                 const heightPerItem = 28;
                 const itemsOverBase = Math.max(0, data.productos.length - 15);
-                cont.style.minHeight = `${baseHeight + (itemsOverBase * heightPerItem)}px`;
+                const newMinHeight = `${baseHeight + (itemsOverBase * heightPerItem)}px`;
+                console.log(`[renderGrafico] - Calculando altura dinámica. Nueva altura mínima: ${newMinHeight}`);
+                cont.style.minHeight = newMinHeight;
+                console.log('[renderGrafico] - Altura del contenedor actualizada.');
                 cont.innerHTML = '';
+
                 const maxLabelLength = 45;
                 const truncatedLabels = data.productos.map(p => p.length > maxLabelLength ? p.substring(0, maxLabelLength) + '…' : p);
+
                 const trace = {
                     type: 'bar', orientation: 'h',
                     x: data.cantidades,
@@ -169,7 +188,16 @@
                     margin: { l: 320, r: 40, t: 80, b: 60 },
                     hovermode: 'y unified',
                 };
-                setTimeout(() => Plotly.newPlot(cont, [trace], layout, { responsive: true, displaylogo: false }), 50);
+
+                console.log('[renderGrafico] - Llamando a Plotly.newPlot...');
+                setTimeout(() => {
+                    try {
+                        Plotly.newPlot(cont, [trace], layout, { responsive: true, displaylogo: false });
+                        console.log('[renderGrafico] - Plotly.newPlot ejecutado exitosamente.');
+                    } catch (plotlyError) {
+                        console.error('[renderGrafico] - ERROR DENTRO DE PLOTLY:', plotlyError);
+                    }
+                }, 50);
             },
             setLoadingState(isLoading) {
                 this.nodes.btnRecargar.disabled = isLoading;
@@ -184,12 +212,14 @@
 
         const App = {
             async init() {
+                console.log(">>> [DIAGNÓSTICO] App.init: Iniciando aplicación.");
                 this.addEventListeners();
                 UI.setControlsDisabled(true);
                 UI.renderMensaje('loading', 'Conectando con el servidor...');
                 try {
                     const status = await API.getStatus();
                     if (!status.datos_cargados) throw new Error(status.error_carga);
+
                     UI.renderStats(status);
                     State.categorias = await API.getCategorias();
                     UI.renderListaCategorias(State.categorias);
@@ -203,7 +233,6 @@
             },
             addEventListeners() {
                 UI.nodes.buscador.addEventListener('input', e => UI.renderListaCategorias(State.categorias, e.target.value));
-                UI.nodes.buscador.addEventListener('focus', () => UI.renderListaCategorias(State.categorias, UI.nodes.buscador.value));
                 UI.nodes.listaCategorias.addEventListener('click', e => this.handleCategoriaSelect(e));
                 UI.nodes.limite.addEventListener('change', e => this.handleLimiteChange(e));
                 UI.nodes.btnRecargar.addEventListener('click', () => this.handleReload());
@@ -217,6 +246,7 @@
             handleCategoriaSelect(e) {
                 if (!e.target.matches('.item-categoria')) return;
                 const categoria = e.target.dataset.value;
+                console.log(`>>> [DIAGNÓSTICO] handleCategoriaSelect: Categoría seleccionada: ${categoria}`);
                 State.categoriaSeleccionada = categoria;
                 UI.nodes.buscador.value = categoria;
                 UI.nodes.listaCategorias.style.display = 'none';
@@ -248,13 +278,22 @@
             },
             async updateGrafico() {
                 if (!State.categoriaSeleccionada) return;
+                console.log(`[updateGrafico] - Iniciando actualización para categoría: "${State.categoriaSeleccionada}"`);
                 UI.renderMensaje('loading', `Cargando top ${State.limiteSeleccionado} de "${State.categoriaSeleccionada}"...`);
                 try {
+                    console.log('[updateGrafico] - Llamando a API.getTopProductos...');
                     const data = await API.getTopProductos(State.categoriaSeleccionada, State.limiteSeleccionado);
+                    console.log('[updateGrafico] - Datos recibidos de la API:', data);
+
+                    console.log('[updateGrafico] - Actualizando texto de información de categoría...');
                     UI.nodes.infoCategoria.textContent = `📈 ${data.categoria}: ${data.total_productos_categoria} productos • ${data.total_unidades_categoria.toLocaleString()} unidades`;
                     UI.nodes.infoCategoria.style.display = 'block';
+                    console.log('[updateGrafico] - Texto de información actualizado. Llamando a UI.renderGrafico...');
+
                     UI.renderGrafico(data);
+                    console.log('[updateGrafico] - UI.renderGrafico finalizado.');
                 } catch (error) {
+                    console.error('[updateGrafico] - ERROR ATRAPADO:', error);
                     const errorMessage = `No se pudo cargar el gráfico: \n\n${error.stack || error.message || JSON.stringify(error)}`;
                     UI.renderMensaje('error', errorMessage);
                 }

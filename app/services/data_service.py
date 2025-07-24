@@ -4,11 +4,7 @@ import logging
 from threading import Lock
 
 logger = logging.getLogger(__name__)
-
-_state = {
-    "df": pd.DataFrame(),
-    "info": {"datos_cargados": False, "error_carga": "No se han cargado datos."}
-}
+_state = {"df": pd.DataFrame(), "info": {"datos_cargados": False, "error_carga": "No se han cargado datos."}}
 _lock = Lock()
 
 
@@ -16,11 +12,9 @@ def _detectar_columna_cantidad(df):
     posibles_columnas = ['Cantidad', 'Ventas', 'Total', 'Qty', 'Units', 'Volume']
     for col_base in posibles_columnas:
         for col_variant in [col_base, col_base.lower(), col_base.upper()]:
-            if col_variant in df.columns:
-                return col_variant
+            if col_variant in df.columns: return col_variant
     columnas_numericas = df.select_dtypes(include=['number']).columns
-    if len(columnas_numericas) > 0:
-        return columnas_numericas[0]
+    if len(columnas_numericas) > 0: return columnas_numericas[0]
     return None
 
 
@@ -39,9 +33,8 @@ def _leer_archivo(ruta_archivo):
 
 
 def load_and_process_data(data_folder):
+    print(f">>> [load_and_process_data] - Iniciando. Buscando en: {data_folder}")
     with _lock:
-        logger.info(f"Iniciando escaneo de datos en: {data_folder}")
-
         if not os.path.isdir(data_folder):
             msg = f"La carpeta de datos '{data_folder}' no existe."
             _state["info"] = {"datos_cargados": False, "error_carga": msg}
@@ -59,8 +52,10 @@ def load_and_process_data(data_folder):
         col_cantidad_detectada = None
 
         for filename in archivos_validos:
+            print(f">>> [load_and_process_data] - Intentando leer el archivo: {filename}")
             temp_df = _leer_archivo(os.path.join(data_folder, filename))
-            if temp_df is None: continue
+            if temp_df is None:
+                continue
 
             temp_df.columns = [str(c).strip() for c in temp_df.columns]
             if 'Categoria' in temp_df.columns: temp_df.rename(columns={'Categoria': 'Categoría'}, inplace=True)
@@ -72,7 +67,7 @@ def load_and_process_data(data_folder):
                 if col_cantidad_detectada:
                     df_cargado = temp_df
                     archivo_origen = filename
-                    logger.info(f"Archivo válido encontrado: {filename}")
+                    print(f">>> [load_and_process_data] - Archivo '{filename}' es válido y ha sido cargado.")
                     break
 
         if df_cargado is None:
@@ -80,7 +75,7 @@ def load_and_process_data(data_folder):
             _state["info"] = {"datos_cargados": False, "error_carga": msg}
             return
 
-        # Lógica de procesamiento completa
+        print(">>> [load_and_process_data] - Iniciando procesamiento final de datos...")
         df = df_cargado.copy()
         df['Categoría'] = df['Categoría'].astype(str).str.strip().str.lower()
         df['Nombre del Producto'] = df['Nombre del Producto'].astype(str).str.strip()
@@ -99,7 +94,7 @@ def load_and_process_data(data_folder):
             "total_unidades": int(df_agrupado['Cantidad'].sum()),
             "archivo_origen": archivo_origen,
         }
-        logger.info("Servicio de datos actualizado exitosamente.")
+        print(">>> [load_and_process_data] - Procesamiento finalizado exitosamente.")
 
 
 def get_status():
