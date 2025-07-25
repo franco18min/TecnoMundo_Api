@@ -1,39 +1,56 @@
-print(">>> [main.py] - Iniciando script...")
 import os
-import traceback
+from pathlib import Path
+from dotenv import load_dotenv
 
-try:
-    print(">>> [main.py] - [Paso 1/5] Importando 'create_app' desde la carpeta 'app'...")
-    from app import create_app
 
-    print(">>> [main.py] - [Paso 1/5] Importación de 'create_app' exitosa.")
+# --- CORRECCIÓN CRÍTICA ---
+# Esta función se ejecuta inmediatamente para cargar las variables de entorno.
+# Debe ejecutarse ANTES de importar cualquier módulo de tu aplicación (como 'app.api').
+def find_and_load_dotenv():
+    """
+    Busca el archivo .env en la ruta 'conf/env/.env' y lo carga.
+    """
+    # La ruta base es la carpeta que contiene este archivo main.py
+    current_path = Path(__file__).resolve().parent
+    dotenv_path = current_path / 'conf' / 'env' / '.env'
 
-    if __name__ == '__main__':
-        print(">>> [main.py] - [Paso 2/5] Entrando al bloque de ejecución principal.")
+    if dotenv_path.exists():
+        print(f"Cargando variables de entorno desde: {dotenv_path}")
+        load_dotenv(dotenv_path=dotenv_path)
+        # Verificación para depuración
+        if not os.getenv("DATABRICKS_SERVER_HOSTNAME"):
+            print("ADVERTENCIA: El archivo .env fue encontrado pero las variables no se cargaron correctamente.")
+    else:
+        print(
+            f"ADVERTENCIA: No se encontró el archivo .env en la ruta esperada: {dotenv_path}. La aplicación podría fallar.")
+        # Intenta cargar desde la raíz si no lo encuentra en la ruta específica
+        load_dotenv()
 
-        config_name = os.getenv('FLASK_CONFIG', 'development')
-        print(f">>> [main.py] - [Paso 2/5] Usando configuración: '{config_name}'")
 
-        print(">>> [main.py] - [Paso 3/5] Creando la instancia de la aplicación (sin cargar datos)...")
-        app = create_app(config_name)
-        print(">>> [main.py] - [Paso 3/5] Instancia de la aplicación creada exitosamente.")
+# Ejecutar la carga de credenciales AHORA.
+find_and_load_dotenv()
 
-        print(">>> [main.py] - [Paso 4/5] Entrando al contexto de la app para cargar datos...")
-        with app.app_context():
-            from app.services import data_service
+# Ahora que las variables están cargadas, podemos importar los módulos de la app de forma segura.
+from flask import Flask
+from app.api import api_bp
 
-            data_service.load_and_process_data(app.config['DATA_FOLDER'])
-        print(">>> [main.py] - [Paso 4/5] Carga de datos finalizada.")
 
-        print(">>> [main.py] - [Paso 5/5] La aplicación es válida. Iniciando el servidor web...")
-        app.run(host='0.0.0.0', port=5000)
+def create_app():
+    """
+    Crea y configura la aplicación Flask.
+    """
+    app = Flask(__name__)
 
-except Exception as e:
-    print("\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-    print("!!! OCURRIÓ UN ERROR CRÍTICO AL INICIAR LA APLICACIÓN !!!")
-    print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-    traceback.print_exc()
+    app.register_blueprint(api_bp, url_prefix='/api')
 
-finally:
-    print("\n--- Fin del script ---")
-    input("Presiona Enter para cerrar la ventana...")
+    @app.route('/')
+    def index():
+        return "API de TecnoMundo - Accede a /api/ para ver el dashboard."
+
+    return app
+
+
+if __name__ == '__main__':
+    app = create_app()
+    port = int(os.environ.get("PORT", 5001))
+    app.run(debug=True, host='0.0.0.0', port=port)

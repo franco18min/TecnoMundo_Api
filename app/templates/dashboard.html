@@ -3,306 +3,181 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard de Ventas Pro</title>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <title>TecnoApp - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        body { font-family: 'Inter', sans-serif; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
         :root {
-            --color-primario: #0052cc;
-            --color-secundario: #00875a;
-            --color-fondo: #f4f5f7;
-            --color-texto: #172b4d;
-            --color-borde: #dfe1e6;
-            --sombra: 0 4px 8px -2px rgba(9, 30, 66, 0.25), 0 0 1px rgba(9, 30, 66, 0.31);
+            --brand-primary: #00b8d4;
+            --brand-dark: #005f6b;
+            --sidebar-active-bg: var(--brand-primary);
+            --sidebar-active-text: #ffffff;
+            --sidebar-hover-bg: #e0f7fa;
+            --sidebar-hover-text: var(--brand-dark);
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: var(--color-fondo); color: var(--color-texto); min-height: 100vh; padding: 24px; }
-        .contenedor-principal { max-width: 1400px; margin: 0 auto; display: grid; gap: 24px; }
-        .panel { background: white; padding: 24px; border-radius: 8px; box-shadow: var(--sombra); }
-        .panel-info { background: #0747a6; color: white; text-align: center; }
-        .panel-info h1 { margin-bottom: 8px; font-size: 24px; }
-        .stats-generales { display: flex; flex-wrap: wrap; justify-content: space-around; gap: 16px; margin-top: 16px; }
-        .stat-item { background: rgba(255,255,255,0.1); padding: 16px; border-radius: 5px; text-align: center; flex: 1; min-width: 180px; }
-        .stat-number { font-size: 24px; font-weight: 600; display: block; }
-        .stat-label { font-size: 14px; opacity: 0.9; }
-        .controles-flexibles { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
-        .selector-categoria { position: relative; flex: 2; min-width: 300px; }
-        .selector-limite { display: flex; align-items: center; gap: 8px; }
-        .control-input { width: 100%; padding: 12px; border: 2px solid var(--color-borde); border-radius: 5px; font-size: 16px; transition: all 0.2s ease; }
-        .control-input:focus { border-color: var(--color-primario); outline: none; box-shadow: 0 0 0 3px rgba(0, 82, 204, 0.2); }
-        .control-input:disabled { background: #fafbfc; cursor: not-allowed; }
-        #lista-categorias { position: absolute; width: 100%; max-height: 300px; overflow-y: auto; background: white; border: 1px solid var(--color-borde); border-radius: 5px; box-shadow: var(--sombra); margin-top: 4px; z-index: 1000; display: none; }
-        .item-categoria { padding: 12px; cursor: pointer; transition: background 0.2s; border-bottom: 1px solid #f4f5f7; }
-        .item-categoria:hover, .item-categoria.highlighted { background: #deebff; color: var(--color-primario); }
-        .btn { padding: 12px 16px; background-color: var(--color-secundario); color: white; border: none; border-radius: 5px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background-color 0.2s; display: inline-flex; align-items: center; gap: 8px; }
-        .btn:hover { background-color: #006644; }
-        .btn:disabled { background-color: #a5adba; cursor: not-allowed; }
-        #contenedor-grafico { min-height: 500px; display: flex; align-items: center; justify-content: center; transition: min-height 0.4s ease-in-out; }
-        .mensaje { padding: 24px; border-radius: 5px; text-align: center; font-size: 1.1em; word-break: break-all; white-space: pre-wrap; }
-        .mensaje.error { color: #bf2600; background: #ffedeb; border: 1px solid #ffcdd2; text-align: left; }
-        .mensaje.loading { color: #0052cc; background: #deebff; border: 1px solid #b3d4ff; }
-        .mensaje.info { color: #006644; background: #e3fcef; border: 1px solid #abf5d1; }
-        .info-categoria { background: #e3fcef; padding: 12px; border-radius: 5px; margin-top: 16px; display: none; }
+
+        .sidebar-link { transition: all 0.2s ease-in-out; }
+        .sidebar-link.active {
+            background-color: var(--sidebar-active-bg);
+            color: var(--sidebar-active-text);
+            font-weight: 600;
+        }
+        .sidebar-link:not(.active):hover {
+            background-color: var(--sidebar-hover-bg);
+            color: var(--sidebar-hover-text);
+        }
+        /* Estilo para el contenedor del gráfico con scroll */
+        .chart-container {
+            position: relative;
+            height: 24rem; /* 384px */
+            max-height: 80vh;
+            overflow-y: auto;
+        }
     </style>
 </head>
-<body>
-    <div class="contenedor-principal">
-        <header class="panel panel-info">
-            <h1>📊 Dashboard de Ventas Pro</h1>
-            <p>Análisis de productos categorizados por volumen de ventas</p>
-            <div id="stats-generales" class="stats-generales"></div>
-        </header>
+<body class="bg-gray-100 text-gray-800">
 
-        <section class="panel">
-            <div class="controles-flexibles">
-                <div class="selector-categoria">
-                    <input type="text" id="buscador" class="control-input" placeholder="🔍 Buscar y seleccionar una categoría..." autocomplete="off" disabled aria-label="Buscar categoría">
-                    <div id="lista-categorias"></div>
-                </div>
-                <div class="selector-limite">
-                    <label for="limite-productos">Top:</label>
-                    <select id="limite-productos" class="control-input" disabled aria-label="Límite de productos a mostrar">
-                        <option value="5">5</option>
-                        <option value="10" selected>10</option>
-                        <option value="20">20</option>
-                        <option value="30">30</option>
-                    </select>
-                </div>
-                <button id="btn-recargar" class="btn" disabled>
-                    <span class="btn-text">Recargar Datos</span>
-                </button>
+    <div class="flex h-screen bg-gray-100">
+        <aside class="w-64 bg-white shadow-lg flex flex-col">
+            <div class="p-6 border-b flex items-center justify-center">
+                <h2 class="text-3xl font-extrabold" style="color: var(--brand-primary);">TecnoApp</h2>
             </div>
-            <div id="info-categoria" class="info-categoria"></div>
-        </section>
+            <nav class="flex-1 p-4 space-y-2">
+                <h3 class="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Secciones</h3>
+                <a href="#" id="sales-analysis-link" class="sidebar-link active flex items-center px-4 py-2 rounded-lg">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                    Análisis de Ventas
+                </a>
+            </nav>
+        </aside>
 
-        <main id="contenedor-grafico" class="panel" role="region" aria-live="polite"></main>
+        <main class="flex-1 flex flex-col overflow-hidden">
+            <div class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100">
+                <div class="container mx-auto p-4 md:p-8">
+                    <header class="mb-8 p-6 rounded-xl shadow-lg text-white" style="background: linear-gradient(90deg, var(--brand-primary) 0%, var(--brand-dark) 100%);">
+                        <h1 class="text-4xl font-extrabold tracking-tight">Dashboard de Ventas</h1>
+                    </header>
+
+                    <div class="bg-white rounded-lg shadow p-4 mb-8 flex flex-col md:flex-row gap-4">
+                        <div class="w-full md:w-2/3">
+                            <label for="category-filter" class="block text-sm font-medium text-gray-700">Filtrar por Categoría</label>
+                            <select id="category-filter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-[var(--brand-primary)] focus:border-[var(--brand-primary)] sm:text-sm rounded-md">
+                                <option value="all">Todas las Categorías</option>
+                            </select>
+                        </div>
+                        <div class="w-full md:w-1/3">
+                            <label for="top-n-filter" class="block text-sm font-medium text-gray-700">Mostrar Top</label>
+                            <select id="top-n-filter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-[var(--brand-primary)] focus:border-[var(--brand-primary)] sm:text-sm rounded-md">
+                                <option value="10">10 Productos</option>
+                                <option value="20">20 Productos</option>
+                                <option value="30">30 Productos</option>
+                                <option value="50">50 Productos</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="dashboard-content">
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <h3 id="chart-title" class="text-xl font-semibold mb-4">Top 10 Productos Vendidos (por Cantidad)</h3>
+                            <div class="chart-container">
+                                <canvas id="topProductsChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
     </div>
 
     <script>
-    (function() {
-        'use strict';
+        document.addEventListener('DOMContentLoaded', () => {
+            const categoryFilter = document.getElementById('category-filter');
+            const topNFilter = document.getElementById('top-n-filter');
+            const chartCanvas = document.getElementById('topProductsChart');
+            const chartTitle = document.getElementById('chart-title');
+            let topProductsChart;
 
-        console.log(">>> [DIAGNÓSTICO] Script principal iniciado.");
+            const fetchData = async () => {
+                const category = categoryFilter.value;
+                const topN = topNFilter.value;
 
-        const State = {
-            categorias: [],
-            categoriaSeleccionada: null,
-            limiteSeleccionado: 10,
-        };
+                let url = `/api/data/sales_analysis?top_n=${topN}`;
+                if (category && category !== 'all') {
+                    url += `&category=${encodeURIComponent(category)}`;
+                }
 
-        const API = {
-            BASE_URL: '',
-            async fetch(endpoint, options = {}) {
                 try {
-                    console.log(`>>> [DIAGNÓSTICO] API Fetch: Realizando petición a ${endpoint}`);
-                    const response = await fetch(this.BASE_URL + endpoint, options);
-                    if (!response.ok) {
-                        const errorData = await response.json().catch(() => ({ error: 'Error de red o respuesta no válida.' }));
-                        throw new Error(errorData.error || `Error HTTP ${response.status}`);
-                    }
+                    const response = await fetch(url);
                     const data = await response.json();
-                    console.log(`>>> [DIAGNÓSTICO] API Fetch: Respuesta recibida de ${endpoint}`, data);
-                    return data;
+
+                    // Actualizar título del gráfico dinámicamente
+                    chartTitle.textContent = `Top ${topN} Productos Vendidos (por Cantidad)`;
+                    updateTopProductsChart(data.top_products_by_quantity);
                 } catch (error) {
-                    console.error(`>>> [DIAGNÓSTICO] API Fetch: Error en petición a ${endpoint}`, error);
-                    throw error;
+                    console.error('Error al obtener los datos:', error);
                 }
-            },
-            getStatus() { return this.fetch('/api/status'); },
-            getCategorias() { return this.fetch('/api/categorias'); },
-            getTopProductos(categoria, limite) { return this.fetch(`/api/top-productos?categoria=${encodeURIComponent(categoria)}&limite=${limite}`); },
-            reload() { return this.fetch('/api/reload', { method: 'POST' }); }
-        };
+            };
 
-        const UI = {
-            nodes: {
-                stats: document.getElementById('stats-generales'),
-                buscador: document.getElementById('buscador'),
-                listaCategorias: document.getElementById('lista-categorias'),
-                limite: document.getElementById('limite-productos'),
-                btnRecargar: document.getElementById('btn-recargar'),
-                btnRecargarText: document.querySelector('#btn-recargar .btn-text'),
-                infoCategoria: document.getElementById('info-categoria'),
-                graficoCont: document.getElementById('contenedor-grafico'),
-            },
-            renderMensaje(tipo, texto) {
-                console.log(`>>> [DIAGNÓSTICO] renderMensaje: Tipo=${tipo}, Texto=${texto}`);
-                if (this.nodes.graficoCont) {
-                    this.nodes.graficoCont.innerHTML = `<div class="mensaje ${tipo}">${texto}</div>`;
-                }
-            },
-            renderStats(stats) {
-                console.log(">>> [DIAGNÓSTICO] renderStats: Renderizando estadísticas generales.", stats);
-                this.nodes.stats.innerHTML = `
-                    <div class="stat-item"><span class="stat-number">${(stats.total_productos || 0).toLocaleString()}</span><span class="stat-label">Productos Únicos</span></div>
-                    <div class="stat-item"><span class="stat-number">${stats.total_categorias || 0}</span><span class="stat-label">Categorías</span></div>
-                    <div class="stat-item"><span class="stat-number">${(stats.total_unidades || 0).toLocaleString()}</span><span class="stat-label">Total Unidades</span></div>
-                    <div class="stat-item"><span class="stat-number">📁</span><span class="stat-label">${stats.archivo_origen || 'N/A'}</span></div>
-                `;
-            },
-            renderListaCategorias(categorias, filtro = '') {
-                const filtradas = categorias.filter(c => c.toLowerCase().includes(filtro.toLowerCase()));
-                this.nodes.listaCategorias.innerHTML = filtradas.map(c => `<div class="item-categoria" data-value="${c}">${c}</div>`).join('');
-                this.nodes.listaCategorias.style.display = filtradas.length > 0 ? 'block' : 'none';
-            },
-            renderGrafico(data) {
-                console.log('[renderGrafico] - Iniciando. Datos recibidos:', data);
-                const { contenedorGrafico: cont } = this.nodes;
-
-                if (!cont) {
-                    console.error("[renderGrafico] - ERROR CRÍTICO: El elemento 'contenedor-grafico' no existe en el DOM.");
-                    return;
-                }
-                console.log('[renderGrafico] - Contenedor del gráfico encontrado.');
-
-                if (!data || !data.productos || !Array.isArray(data.productos) || data.productos.length === 0) {
-                    console.warn('[renderGrafico] - No hay productos para mostrar. Mostrando mensaje de información.');
-                    this.renderMensaje('info', 'No hay productos para mostrar en esta categoría.');
-                    return;
-                }
-                console.log('[renderGrafico] - Los datos son válidos y contienen productos.');
-
-                const baseHeight = 500;
-                const heightPerItem = 28;
-                const itemsOverBase = Math.max(0, data.productos.length - 15);
-                const newMinHeight = `${baseHeight + (itemsOverBase * heightPerItem)}px`;
-                console.log(`[renderGrafico] - Calculando altura dinámica. Nueva altura mínima: ${newMinHeight}`);
-                cont.style.minHeight = newMinHeight;
-                console.log('[renderGrafico] - Altura del contenedor actualizada.');
-                cont.innerHTML = '';
-
-                const maxLabelLength = 45;
-                const truncatedLabels = data.productos.map(p => p.length > maxLabelLength ? p.substring(0, maxLabelLength) + '…' : p);
-
-                const trace = {
-                    type: 'bar', orientation: 'h',
-                    x: data.cantidades,
-                    y: truncatedLabels,
-                    customdata: data.productos,
-                    marker: { color: '#0052cc' },
-                    hovertemplate: '<b>%{customdata}</b><br>Cantidad: %{x:,}<extra></extra>'
-                };
-                const layout = {
-                    title: `Top ${data.productos.length} Productos - ${data.categoria}`,
-                    xaxis: { title: 'Cantidad Vendida', automargin: true },
-                    yaxis: { automargin: true, tickfont: { size: 12 } },
-                    margin: { l: 320, r: 40, t: 80, b: 60 },
-                    hovermode: 'y unified',
-                };
-
-                console.log('[renderGrafico] - Llamando a Plotly.newPlot...');
-                setTimeout(() => {
-                    try {
-                        Plotly.newPlot(cont, [trace], layout, { responsive: true, displaylogo: false });
-                        console.log('[renderGrafico] - Plotly.newPlot ejecutado exitosamente.');
-                    } catch (plotlyError) {
-                        console.error('[renderGrafico] - ERROR DENTRO DE PLOTLY:', plotlyError);
+            const initializeTopProductsChart = () => {
+                const ctx = chartCanvas.getContext('2d');
+                topProductsChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: { labels: [], datasets: [{ label: 'Unidades Vendidas', data: [], backgroundColor: 'rgba(0, 184, 212, 0.8)', borderColor: 'rgba(0, 184, 212, 1)', borderWidth: 1, borderRadius: 5 }] },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: { x: { beginAtZero: true, ticks: { precision: 0 } } },
+                        plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `${context.raw} unidades` } } }
                     }
-                }, 50);
-            },
-            setLoadingState(isLoading) {
-                this.nodes.btnRecargar.disabled = isLoading;
-                this.nodes.btnRecargarText.textContent = isLoading ? 'Cargando...' : 'Recargar Datos';
-            },
-            setControlsDisabled(disabled) {
-                this.nodes.buscador.disabled = disabled;
-                this.nodes.limite.disabled = disabled;
-                this.nodes.btnRecargar.disabled = disabled;
-            }
-        };
-
-        const App = {
-            async init() {
-                console.log(">>> [DIAGNÓSTICO] App.init: Iniciando aplicación.");
-                this.addEventListeners();
-                UI.setControlsDisabled(true);
-                UI.renderMensaje('loading', 'Conectando con el servidor...');
-                try {
-                    const status = await API.getStatus();
-                    if (!status.datos_cargados) throw new Error(status.error_carga);
-
-                    UI.renderStats(status);
-                    State.categorias = await API.getCategorias();
-                    UI.renderListaCategorias(State.categorias);
-                    UI.setControlsDisabled(false);
-                    UI.renderMensaje('info', 'Datos cargados. Seleccione una categoría.');
-                } catch (error) {
-                    const errorMessage = `Error al iniciar: \n\n${error.stack || error.message || JSON.stringify(error)}`;
-                    UI.renderMensaje('error', errorMessage);
-                    UI.nodes.btnRecargar.disabled = false;
-                }
-            },
-            addEventListeners() {
-                UI.nodes.buscador.addEventListener('input', e => UI.renderListaCategorias(State.categorias, e.target.value));
-                UI.nodes.listaCategorias.addEventListener('click', e => this.handleCategoriaSelect(e));
-                UI.nodes.limite.addEventListener('change', e => this.handleLimiteChange(e));
-                UI.nodes.btnRecargar.addEventListener('click', () => this.handleReload());
-                document.addEventListener('click', e => {
-                    if (!e.target.closest('.selector-categoria')) UI.nodes.listaCategorias.style.display = 'none';
                 });
-                window.addEventListener('resize', () => {
-                    if (UI.nodes.graficoCont.querySelector('.js-plotly-plot')) Plotly.Plots.resize(UI.nodes.graficoCont);
-                });
-            },
-            handleCategoriaSelect(e) {
-                if (!e.target.matches('.item-categoria')) return;
-                const categoria = e.target.dataset.value;
-                console.log(`>>> [DIAGNÓSTICO] handleCategoriaSelect: Categoría seleccionada: ${categoria}`);
-                State.categoriaSeleccionada = categoria;
-                UI.nodes.buscador.value = categoria;
-                UI.nodes.listaCategorias.style.display = 'none';
-                this.updateGrafico();
-            },
-            handleLimiteChange(e) {
-                State.limiteSeleccionado = parseInt(e.target.value, 10);
-                if (State.categoriaSeleccionada) this.updateGrafico();
-            },
-            async handleReload() {
-                UI.setLoadingState(true);
-                UI.renderMensaje('loading', 'Recargando datos desde el servidor...');
-                try {
-                    const result = await API.reload();
-                    UI.renderStats(result.info);
-                    State.categorias = await API.getCategorias();
-                    if (State.categoriaSeleccionada && State.categorias.includes(State.categoriaSeleccionada)) {
-                        await this.updateGrafico();
-                    } else {
-                        State.categoriaSeleccionada = null;
-                        UI.nodes.buscador.value = '';
-                        UI.renderMensaje('info', 'Datos recargados. Seleccione una categoría.');
-                    }
-                } catch (error) {
-                    UI.renderMensaje('error', `Error al recargar: ${error.message}`);
-                } finally {
-                    UI.setLoadingState(false);
+            };
+
+            const updateTopProductsChart = (products) => {
+                const chartHeight = products.length * 25 + 120; // Calcular altura dinámica
+                chartCanvas.parentElement.style.height = `${Math.max(384, chartHeight)}px`;
+
+                if (!products || products.length === 0) {
+                    topProductsChart.data.labels = ['Sin datos'];
+                    topProductsChart.data.datasets[0].data = [0];
+                } else {
+                    topProductsChart.data.labels = products.map(p => p.nombre_del_producto);
+                    topProductsChart.data.datasets[0].data = products.map(p => p.total_unidades);
                 }
-            },
-            async updateGrafico() {
-                if (!State.categoriaSeleccionada) return;
-                console.log(`[updateGrafico] - Iniciando actualización para categoría: "${State.categoriaSeleccionada}"`);
-                UI.renderMensaje('loading', `Cargando top ${State.limiteSeleccionado} de "${State.categoriaSeleccionada}"...`);
+                topProductsChart.update();
+            };
+
+            const loadCategories = async () => {
                 try {
-                    console.log('[updateGrafico] - Llamando a API.getTopProductos...');
-                    const data = await API.getTopProductos(State.categoriaSeleccionada, State.limiteSeleccionado);
-                    console.log('[updateGrafico] - Datos recibidos de la API:', data);
-
-                    console.log('[updateGrafico] - Actualizando texto de información de categoría...');
-                    UI.nodes.infoCategoria.textContent = `📈 ${data.categoria}: ${data.total_productos_categoria} productos • ${data.total_unidades_categoria.toLocaleString()} unidades`;
-                    UI.nodes.infoCategoria.style.display = 'block';
-                    console.log('[updateGrafico] - Texto de información actualizado. Llamando a UI.renderGrafico...');
-
-                    UI.renderGrafico(data);
-                    console.log('[updateGrafico] - UI.renderGrafico finalizado.');
+                    const response = await fetch('/api/categories');
+                    const categories = await response.json();
+                    categories.forEach(cat => {
+                        if (cat) {
+                            const option = document.createElement('option');
+                            option.value = cat;
+                            option.textContent = cat;
+                            categoryFilter.appendChild(option);
+                        }
+                    });
                 } catch (error) {
-                    console.error('[updateGrafico] - ERROR ATRAPADO:', error);
-                    const errorMessage = `No se pudo cargar el gráfico: \n\n${error.stack || error.message || JSON.stringify(error)}`;
-                    UI.renderMensaje('error', errorMessage);
+                    console.error('Error al cargar categorías:', error);
                 }
-            }
-        };
+            };
 
-        document.addEventListener('DOMContentLoaded', () => App.init());
+            const initializeDashboard = async () => {
+                initializeTopProductsChart();
+                await loadCategories();
+                await fetchData();
 
-    })();
+                categoryFilter.addEventListener('change', fetchData);
+                topNFilter.addEventListener('change', fetchData);
+            };
+
+            initializeDashboard();
+        });
     </script>
 </body>
 </html>
