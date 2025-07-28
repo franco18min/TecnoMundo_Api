@@ -2,6 +2,8 @@ import os
 from databricks import sql
 import pandas as pd
 import logging
+# Importamos las funciones que construyen las consultas
+from app.utils.queries import get_sales_query, get_categories_query, get_inventory_query
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -16,7 +18,11 @@ class DatabricksConnector:
         if not all([self.server_hostname, self.http_path, self.access_token]):
             raise ValueError("Las variables de entorno de Databricks no están configuradas correctamente.")
 
-    def _execute_query(self, query: str):
+    def execute_query(self, query: str) -> pd.DataFrame:
+        """
+        Método genérico para ejecutar una consulta y devolver un DataFrame de Pandas.
+        """
+        logger.info(f"Ejecutando consulta: {query[:200]}...")  # Loguea los primeros 200 caracteres
         try:
             with sql.connect(
                     server_hostname=self.server_hostname,
@@ -27,33 +33,20 @@ class DatabricksConnector:
                     cursor.execute(query)
                     result = cursor.fetchall()
                     columns = [desc[0] for desc in cursor.description]
-                    return result, columns
+                    return pd.DataFrame(result, columns=columns) if result else pd.DataFrame()
         except Exception as e:
             logger.error(f"Error al ejecutar la consulta en Databricks: {e}")
             raise
 
     def get_sales_data(self, category: str = None) -> pd.DataFrame:
-        base_query = "SELECT * FROM workspace.tecnomundo_data_gold.fact_sales"
-
-        conditions = []
-        if category:
-            conditions.append(f"categoria = '{category}'")
-
-        if conditions:
-            base_query += " WHERE " + " AND ".join(conditions)
-
-        logger.info(f"Ejecutando consulta de ventas: {base_query}")
-
-        result, columns = self._execute_query(base_query)
-        if result:
-            return pd.DataFrame(result, columns=columns)
-        return pd.DataFrame()
+        query = get_sales_query(category)
+        return self.execute_query(query)
 
     def get_categories(self) -> list:
-        query = "SELECT DISTINCT categoria FROM workspace.tecnomundo_data_gold.dim_products WHERE categoria IS NOT NULL ORDER BY categoria"
-        logger.info(f"Ejecutando consulta de categorías: {query}")
+        query = get_categories_query()
+        df = self.execute_query(query)
+        return df.iloc[:, 0].tolist() if not df.empty else []
 
-        result, _ = self._execute_query(query)
-        if result:
-            return [row[0] for row in result]
-        return []
+    def get_inventory_data(self, category: str = None) -> pd.DataFrame:
+        query = get_inventory_query(category)
+        return self.execute_query(query)
