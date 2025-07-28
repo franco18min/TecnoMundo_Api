@@ -48,6 +48,10 @@
             transition: opacity 0.3s;
             border-radius: 0.75rem;
         }
+        #loading-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
         #progress-bar-container {
             width: 50%;
             height: 8px;
@@ -138,7 +142,7 @@
                                     </select>
                                 </div>
                             </div>
-                            <div class="bg-white rounded-lg shadow overflow-hidden">
+                            <div class="bg-white rounded-lg shadow overflow-x-auto">
                                 <table class="min-w-full divide-y divide-gray-200">
                                     <thead class="bg-gray-50">
                                         <tr>
@@ -161,29 +165,22 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // --- Elementos Comunes ---
-            const mainContentContainer = document.getElementById('main-content-container');
             const loadingOverlay = document.getElementById('loading-overlay');
             const progressBar = document.getElementById('progress-bar');
             let progressInterval;
 
-            const salesSection = document.getElementById('sales-analysis-section');
-            const inventorySection = document.getElementById('inventory-intelligence-section');
             const salesLink = document.getElementById('sales-analysis-link');
             const inventoryLink = document.getElementById('inventory-intelligence-link');
-
-            // --- Elementos de Análisis de Ventas ---
             const categoryFilterSales = document.getElementById('category-filter-sales');
             const topNFilter = document.getElementById('top-n-filter');
             const chartCanvas = document.getElementById('topProductsChart');
             const chartTitle = document.getElementById('chart-title');
             let topProductsChart;
-
-            // --- Elementos de Inteligencia de Inventario ---
             const categoryFilterInventory = document.getElementById('category-filter-inventory');
             const inventoryTableBody = document.getElementById('inventory-table-body');
 
             const showLoader = () => {
+                if (progressInterval) clearInterval(progressInterval);
                 progressBar.style.width = '0%';
                 loadingOverlay.classList.remove('hidden');
                 let progress = 0;
@@ -197,7 +194,9 @@
             const hideLoader = () => {
                 clearInterval(progressInterval);
                 progressBar.style.width = '100%';
-                setTimeout(() => { loadingOverlay.classList.add('hidden'); }, 300);
+                setTimeout(() => {
+                    loadingOverlay.classList.add('hidden');
+                }, 300);
             };
 
             const switchSection = (targetSection) => {
