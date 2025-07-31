@@ -72,3 +72,20 @@ def get_inventory_analysis_data():
     except Exception as e:
         logger.error(f"Error en el endpoint /data/inventory_analysis: {e}")
         return jsonify({"error": "Error interno del servidor"}), 500
+
+@api_bp.route('/reports/inventory_health')
+@cache.cached(timeout=3600) # Cachear el informe por 1 hora
+def get_inventory_health_report():
+    """
+    Endpoint para obtener los datos consolidados para el informe de salud de inventario.
+    """
+    try:
+        # Llama al nuevo método en el servicio
+        report_data = dashboard_service.get_inventory_health_report_data()
+        if report_data:
+            return jsonify(report_data)
+        else:
+            return jsonify({"error": "No se pudo generar el informe"}), 500
+    except Exception as e:
+        logger.error(f"Error en el endpoint /reports/inventory_health: {e}")
+        return jsonify({"error": "Error interno del servidor"}), 500
