@@ -1,20 +1,30 @@
+# app/api.py
+
 from flask import Blueprint, render_template, jsonify, request
 from app.services.dashboard_service import DashboardService
+from .extensions import cache  # Importamos 'cache' desde el nuevo archivo extensions.py
 import logging
 
 api_bp = Blueprint('api', __name__, template_folder='templates', static_folder='static')
 dashboard_service = DashboardService()
 logger = logging.getLogger(__name__)
 
-
 @api_bp.route('/')
 def index():
+    """
+    Endpoint de la API que renderiza la página principal del dashboard.
+    """
     return render_template('dashboard.html')
 
-
 @api_bp.route('/data/sales_analysis')
+@cache.cached(timeout=300, query_string=True)
 def get_sales_analysis_data():
-    # ... (código existente sin cambios)
+    """
+    Endpoint para el análisis de ventas.
+    La respuesta se cachea por 300 segundos (5 minutos).
+    'query_string=True' crea un caché diferente para cada combinación de parámetros.
+    """
+    logger.info("¡Endpoint de análisis de ventas ejecutado! No se encontró caché para esta petición.")
     try:
         category = request.args.get('category')
         top_n = request.args.get('top_n', 10, type=int)
@@ -26,10 +36,13 @@ def get_sales_analysis_data():
         logger.error(f"Error en el endpoint /data/sales_analysis: {e}")
         return jsonify({"error": "Error interno del servidor"}), 500
 
-
 @api_bp.route('/categories')
+@cache.cached(timeout=3600)
 def get_categories():
-    # ... (código existente sin cambios)
+    """
+    Endpoint para obtener la lista de categorías. Se cachea por 1 hora.
+    """
+    logger.info("¡Endpoint de categorías ejecutado! No se encontró caché.")
     try:
         categories = dashboard_service.get_all_categories()
         return jsonify(categories)
@@ -37,13 +50,13 @@ def get_categories():
         logger.error(f"Error en el endpoint /categories: {e}")
         return jsonify({"error": "Error interno del servidor"}), 500
 
-
-# --- NUEVO ENDPOINT ---
 @api_bp.route('/data/inventory_analysis')
+@cache.cached(timeout=300, query_string=True)
 def get_inventory_analysis_data():
     """
     Endpoint para obtener los datos de la sección de inteligencia de inventario.
     """
+    logger.info("¡Endpoint de análisis de inventario ejecutado! No se encontró caché para esta petición.")
     try:
         category = request.args.get('category')
         if category and category.lower() == 'all':

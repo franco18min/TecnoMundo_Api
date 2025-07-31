@@ -1,52 +1,94 @@
-import os
-from databricks import sql
-import pandas as pd
-import logging
-# Importamos las funciones que construyen las consultas
-from app.utils.queries import get_sales_query, get_categories_query, get_inventory_query
+# app/utils/databricks_connector.py
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+import os
+import pandas as pd
+from databricks import sql
+import logging
+from app.utils.queries import get_inventory_query, get_sales_query, get_categories_query
+
+# Configuración del logger para este módulo
 logger = logging.getLogger(__name__)
 
-
 class DatabricksConnector:
+    """
+    Clase para manejar la conexión y ejecución de consultas en Databricks.
+    """
     def __init__(self):
-        self.server_hostname = os.getenv("DATABRICKS_SERVER_HOSTNAME")
-        self.http_path = os.getenv("DATABRICKS_HTTP_PATH")
-        self.access_token = os.getenv("DATABRICKS_TOKEN")
-
-        if not all([self.server_hostname, self.http_path, self.access_token]):
-            raise ValueError("Las variables de entorno de Databricks no están configuradas correctamente.")
-
-    def execute_query(self, query: str) -> pd.DataFrame:
         """
-        Método genérico para ejecutar una consulta y devolver un DataFrame de Pandas.
+        Inicializa el conector y establece la conexión al instanciar la clase.
         """
-        logger.info(f"Ejecutando consulta: {query[:200]}...")  # Loguea los primeros 200 caracteres
+        self.connection = None
         try:
-            with sql.connect(
-                    server_hostname=self.server_hostname,
-                    http_path=self.http_path,
-                    access_token=self.access_token
-            ) as connection:
-                with connection.cursor() as cursor:
-                    cursor.execute(query)
-                    result = cursor.fetchall()
-                    columns = [desc[0] for desc in cursor.description]
-                    return pd.DataFrame(result, columns=columns) if result else pd.DataFrame()
+            self.connection = sql.connect(
+                server_hostname=os.getenv("DATABRICKS_SERVER_HOSTNAME"),
+                http_path=os.getenv("DATABRICKS_HTTP_PATH"),
+                access_token=os.getenv("DATABRICKS_TOKEN")
+            )
+            logger.info("Conexión a Databricks establecida exitosamente.")
         except Exception as e:
-            logger.error(f"Error al ejecutar la consulta en Databricks: {e}")
+            logger.error(f"No se pudo conectar a Databricks: {e}")
+            # Levantar la excepción para que el servicio que lo llama sepa que falló
             raise
 
-    def get_sales_data(self, category: str = None) -> pd.DataFrame:
-        query = get_sales_query(category)
-        return self.execute_query(query)
+    def execute_query(self, query: str, params: list = None) -> pd.DataFrame:
+        """
+        Ejecuta una consulta SQL de forma segura, utilizando parámetros para prevenir inyección SQL.
 
-    def get_categories(self) -> list:
-        query = get_categories_query()
-        df = self.execute_query(query)
-        return df.iloc[:, 0].tolist() if not df.empty else []
+        Args:
+            query (str): La cadena de la consulta SQL con marcadores de posición (%s).
+            params (list, optional): Una lista de parámetros para sustituir en la consulta. Defaults to None.
+
+        Returns:
+            pd.DataFrame: Un DataFrame de pandas con los resultados, o un DataFrame vacío si no hay resultados.
+        """
+        if not self.connection:
+            logger.error("No hay conexión a Databricks para ejecutar la consulta.")
+            return pd.DataFrame()
+
+        try:
+            with self.connection.cursor() as cursor:
+                # ¡AQUÍ ESTÁ EL CAMBIO CLAVE!
+                # Pasamos los parámetros de forma segura como un segundo argumento a execute().
+                # El conector se encarga de escapar cualquier carácter especial (como '/').
+                logger.debug(f"Ejecutando consulta: {query} con parámetros: {params}")
+                cursor.execute(query, params or [])
+                result = cursor.fetchall_arrow().to_pandas()
+                return result
+        except Exception as e:
+            logger.error(f"Error al ejecutar la consulta: {e}")
+            return pd.DataFrame() # Devolver un DataFrame vacío en caso de error
 
     def get_inventory_data(self, category: str = None) -> pd.DataFrame:
-        query = get_inventory_query(category)
-        return self.execute_query(query)
+        """
+        Obtiene los datos de inventario llamando a la función de consulta correspondiente.
+        """
+        # Obtenemos la consulta y los parámetros desde queries.py
+        query, params = get_inventory_query(category)
+        # Ejecutamos la consulta de forma segura
+        return self.execute_query(query, params)
+
+    def get_sales_data(self, category: str = None) -> pd.DataFrame:
+        """
+        Obtiene los datos de ventas llamando a la función de consulta correspondiente.
+        """
+        query, params = get_sales_query(category)
+        return self.execute_query(query, params)
+
+    def get_categories(self) -> list:
+        """
+        Obtiene la lista de categorías únicas. Esta consulta no necesita parámetros.
+        """
+        query = get_categories_query()
+        df = self.execute_query(query)
+        if not df.empty:
+            return df['categoria'].tolist()
+        return []
+
+    def close_connection(self):
+        """
+        Cierra la conexión a Databricks si está abierta.
+        """
+        if self.connection:
+            self.connection.close()
+            logger.info("Conexión a Databricks cerrada.")
+

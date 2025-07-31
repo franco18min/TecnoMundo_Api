@@ -1,13 +1,18 @@
 # app/utils/queries.py
+from typing import Tuple, List, Any
 
-def get_sales_query(category: str = None) -> str:
+def get_sales_query(category: str = None) -> Tuple[str, List[Any]]:
     """
-    Construye la consulta SQL para obtener datos de ventas, con un filtro de categoría opcional.
+    Construye la consulta SQL para ventas, usando '?' como marcador de posición
+    para compatibilidad con el conector de Databricks.
     """
     base_query = "SELECT * FROM workspace.tecnomundo_data_gold.fact_sales"
+    params = []
     if category:
-        base_query += f" WHERE categoria = '{category}'"
-    return base_query
+        # CAMBIO: Usamos '?' en lugar de '%s'
+        base_query += " WHERE categoria = ?"
+        params.append(category)
+    return base_query, params
 
 
 def get_categories_query() -> str:
@@ -17,12 +22,13 @@ def get_categories_query() -> str:
     return "SELECT DISTINCT categoria FROM workspace.tecnomundo_data_gold.dim_products WHERE categoria IS NOT NULL ORDER BY categoria"
 
 
-def get_inventory_query(category: str = None) -> str:
+def get_inventory_query(category: str = None) -> Tuple[str, List[Any]]:
     """
     Construye la consulta SQL para el análisis de inventario.
-    Calcula las ventas de los últimos 30 días para cada producto basándose en su fecha de venta más reciente.
+    Usa '?' como marcador de posición para los parámetros.
     """
-    query = f"""
+    params = []
+    query = """
     WITH ProductMaxDate AS (
         SELECT
             codigo_producto,
@@ -60,6 +66,8 @@ def get_inventory_query(category: str = None) -> str:
     """
 
     if category:
-        query += f" AND ls.categoria = '{category}'"
+        # CAMBIO: Usamos '?' en lugar de '%s'
+        query += " AND ls.categoria = ?"
+        params.append(category)
 
-    return query
+    return query, params

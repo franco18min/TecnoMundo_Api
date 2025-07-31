@@ -1,3 +1,4 @@
+# config.py
 import os
 
 class Config:
@@ -5,8 +6,11 @@ class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY', 'un-secreto-muy-dificil-de-adivinar')
     DEBUG = False
     TESTING = False
-    # Carpeta donde se buscarán los datos
     DATA_FOLDER = os.environ.get('DATA_FOLDER', 'archive_categorized')
+
+    # --- Configuración del Caché ---
+    CACHE_TYPE = 'SimpleCache'
+    CACHE_DEFAULT_TIMEOUT = 300
 
 class DevelopmentConfig(Config):
     """Configuración para desarrollo."""
@@ -21,4 +25,3 @@ config_by_name = {
     'production': ProductionConfig,
     'default': DevelopmentConfig
 }
-

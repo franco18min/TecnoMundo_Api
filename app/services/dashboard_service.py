@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from app.utils.databricks_connector import DatabricksConnector
 import logging
 
@@ -35,26 +36,44 @@ class DashboardService:
             if df.empty:
                 return []
 
-            # Lógica de Estado basada en el movimiento de ventas
-            def assign_status(row):
-                ventas_30d = row['unidades_vendidas_30d']
+            # --- 1. Limpieza de Datos ---
+            # Nos aseguramos de que las columnas numéricas no contengan valores nulos (NULL/NaN).
+            df['stock_actual'] = pd.to_numeric(df['stock_actual']).fillna(0)
+            df['unidades_vendidas_30d'] = pd.to_numeric(df['unidades_vendidas_30d']).fillna(0)
+
+            # --- 2. Cálculo de Días de Inventario (DOI) ---
+            # Se calcula la venta diaria promedio.
+            venta_diaria_promedio = df['unidades_vendidas_30d'] / 30
+
+            # Se calcula el DOI. np.where previene la división por cero si no hay ventas.
+            # Si no hay ventas, los días de inventario son infinitos (np.inf).
+            df['dias_inventario'] = np.where(
+                venta_diaria_promedio > 0,
+                df['stock_actual'] / venta_diaria_promedio,
+                np.inf
+            )
+
+            # --- 3. Nueva Lógica de Estado basada en DOI ---
+            def assign_status_doi(row):
                 stock = row['stock_actual']
+                ventas_30d = row['unidades_vendidas_30d']
+                doi = row['dias_inventario']
 
                 if stock <= 0:
                     return 'Sin Stock'
                 if ventas_30d == 0:
                     return 'Inventario Estancado'
-                if ventas_30d > 20 and stock < 10:  # Se vende mucho, queda poco
+                if doi <= 7:  # Menos de 1 semana de stock
                     return 'Riesgo de Quiebre'
-                if ventas_30d > 10:  # Se vende bien
+                if doi <= 30:  # Entre 1 semana y 1 mes
                     return 'Alta Rotación'
-                if ventas_30d < 5 and stock > 20:  # Se vende poco, hay mucho
+                if doi > 90:  # Más de 3 meses de stock
                     return 'Lenta Rotación'
                 return 'Rotación Saludable'
 
-            df['estado'] = df.apply(assign_status, axis=1)
+            df['estado'] = df.apply(assign_status_doi, axis=1)
 
-            # CORRECCIÓN: Se elimina 'dias_inventario' de la selección final
+            # 4. Seleccionamos las columnas finales para la respuesta a la API.
             df_final = df[['nombre_del_producto', 'stock_actual', 'unidades_vendidas_30d', 'estado']].copy()
 
             return df_final.to_dict(orient='records')
