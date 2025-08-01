@@ -95,24 +95,15 @@
         .modal-overlay.visible .modal-content {
             transform: scale(1);
         }
-        .doi-tooltip {
-            position: relative;
-            cursor: pointer;
-            color: var(--brand-primary);
-            font-weight: 600;
-            border-bottom: 2px dotted var(--brand-primary);
-        }
-        #doi-explanation {
-            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
-        }
 
         @media (max-width: 768px) {
-            #inventory-table thead { display: none; }
-            #inventory-table, #inventory-table tbody, #inventory-table tr, #inventory-table td { display: block; width: 100%; }
-            #inventory-table tr { margin-bottom: 1rem; border: 1px solid #ddd; border-radius: 0.5rem; overflow: hidden; }
-            #inventory-table td { display: flex; justify-content: space-between; padding: 0.75rem 1rem; text-align: right; border-bottom: 1px solid #eee; }
-            #inventory-table td:last-child { border-bottom: none; }
-            #inventory-table td::before { content: attr(data-label); font-weight: 600; text-align: left; padding-right: 1rem; color: #333; }
+            #inventory-table thead, #kpi-modal-table thead { display: none; }
+            #inventory-table, #inventory-table tbody, #inventory-table tr, #inventory-table td,
+            #kpi-modal-table, #kpi-modal-table-body, #kpi-modal-table tr, #kpi-modal-table td { display: block; width: 100%; }
+            #inventory-table tr, #kpi-modal-table tr { margin-bottom: 1rem; border: 1px solid #ddd; border-radius: 0.5rem; overflow: hidden; }
+            #inventory-table td, #kpi-modal-table td { display: flex; justify-content: space-between; padding: 0.75rem 1rem; text-align: right; border-bottom: 1px solid #eee; }
+            #inventory-table td:last-child, #kpi-modal-table td:last-child { border-bottom: none; }
+            #inventory-table td::before, #kpi-modal-table td::before { content: attr(data-label); font-weight: 600; text-align: left; padding-right: 1rem; color: #333; }
         }
     </style>
 </head>
@@ -219,7 +210,7 @@
                                 </div>
                             </div>
                             <div class="bg-white rounded-lg shadow overflow-hidden">
-                                <table id="inventory-table" class="w-full divide-y divide-gray-200 table-fixed">
+                                <table id="inventory-table" class="w-full divide-y divide-gray-200">
                                     <thead class="bg-gray-50">
                                         <tr>
                                             <th scope="col" class="w-6/12 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Producto</th>
@@ -235,16 +226,10 @@
                         </div>
                     </div>
 
-                    <!-- NUEVA SECCIÓN DE INFORMES -->
+                    <!-- SECCIÓN DE INFORMES -->
                     <div id="reports-section" class="dashboard-section">
                         <header class="mb-8 p-6 rounded-xl shadow-lg text-white" style="background: linear-gradient(90deg, #005f6b 0%, #00b8d4 100%);">
-                            <div class="flex justify-between items-center">
-                                <h1 class="text-4xl font-extrabold tracking-tight">Informe de Salud de Inventario</h1>
-                                <button class="bg-white text-[var(--brand-dark)] font-bold py-2 px-4 rounded-lg shadow hover:bg-gray-200 transition">
-                                    <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                                    Exportar a PDF
-                                </button>
-                            </div>
+                            <h1 class="text-4xl font-extrabold tracking-tight">Informe de Salud de Inventario</h1>
                         </header>
 
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -283,6 +268,25 @@
                                  <canvas id="inventoryStatusChart"></canvas>
                              </div>
                         </div>
+
+                        <!-- NUEVO GRÁFICO DE TENDENCIA DE VENTAS -->
+                        <div class="bg-white rounded-lg shadow p-6 mt-8">
+                            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+                                 <h3 class="text-xl font-semibold">Tendencia de Ventas</h3>
+                                 <div>
+                                     <label for="sales-trend-period" class="text-sm font-medium text-gray-700 mr-2">Período:</label>
+                                     <select id="sales-trend-period" class="rounded-md border-gray-300 shadow-sm focus:border-[var(--brand-primary)] focus:ring-[var(--brand-primary)] sm:text-sm">
+                                         <option value="30d" selected>Últimos 30 días</option>
+                                         <option value="90d">Últimos 90 días</option>
+                                         <option value="180d">Últimos 6 meses</option>
+                                         <option value="365d">Último Año</option>
+                                     </select>
+                                 </div>
+                            </div>
+                            <div class="h-96 w-full mx-auto">
+                                <canvas id="salesTrendChart"></canvas>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -291,21 +295,57 @@
 
     <!-- Ventana Modal de Información -->
     <div id="info-modal-overlay" class="modal-overlay">
-        <!-- ... (código del modal sin cambios) ... -->
-    </div>
-
-    <!-- NUEVA VENTANA MODAL PARA DETALLES DE KPI -->
-    <div id="kpi-details-modal-overlay" class="modal-overlay">
-        <div class="modal-content max-w-4xl w-11/12 mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden relative">
-            <button id="kpi-details-modal-close" class="absolute top-4 right-4 text-gray-400 hover:text-gray-800 transition">
+        <div class="modal-content max-w-2xl w-11/12 mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden relative">
+             <button id="info-modal-close" class="absolute top-4 right-4 text-white hover:text-gray-200 transition z-10">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
-            <header class="p-6">
-                <h2 id="kpi-modal-title" class="text-2xl font-bold text-gray-800">Detalle de Productos</h2>
+            <header class="p-6 text-white" style="background: linear-gradient(90deg, var(--brand-dark) 0%, var(--brand-primary) 100%);">
+                <h2 class="text-2xl font-bold">Definición de Estados de Inventario</h2>
             </header>
-            <div class="px-6 pb-6 max-h-[60vh] overflow-y-auto">
-                <div class="overflow-hidden border-b border-gray-200 rounded-lg">
-                    <table class="min-w-full divide-y divide-gray-200">
+            <div class="p-6 space-y-4 text-gray-600 max-h-[70vh] overflow-y-auto">
+                <p>Los estados de inventario se calculan dinámicamente para cada producto, basados en su stock actual y su ritmo de ventas de los últimos 30 días.</p>
+                <div class="space-y-3">
+                    <div>
+                        <h4 class="font-semibold text-gray-800">Alta Rotación (<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Alta Rotación</span>)</h4>
+                        <p class="text-sm">Estos productos se venden muy rápidamente. Es crucial monitorear su stock de cerca para evitar quiebres.</p>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-gray-800">Saludable (<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Saludable</span>)</h4>
+                        <p class="text-sm">El producto tiene suficiente stock para cubrir la demanda proyectada, pero no en exceso.</p>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-gray-800">Lenta Rotación (<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Lenta Rotación</span>)</h4>
+                        <p class="text-sm">Las ventas de este producto son bajas en relación a la cantidad de stock disponible. Podría convertirse en inventario estancado.</p>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-gray-800">Riesgo de Quiebre (<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Riesgo de Quiebre</span>)</h4>
+                        <p class="text-sm">El stock actual es bajo en comparación con las ventas recientes. ¡Hay riesgo de perder ventas si no se repone pronto!</p>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-gray-800">Inventario Estancado (<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-200 text-gray-800">Inventario Estancado</span>)</h4>
+                        <p class="text-sm">El producto no ha registrado ventas en los últimos 30 días y hay stock disponible. Ocupa espacio y capital inmovilizado.</p>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-gray-800">Sin Stock (<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-200 text-red-900">Sin Stock</span>)</h4>
+                        <p class="text-sm">El producto no tiene unidades disponibles en inventario. ¡Se están perdiendo ventas!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VENTANA MODAL PARA DETALLES DE KPI -->
+    <div id="kpi-details-modal-overlay" class="modal-overlay">
+        <div class="modal-content max-w-4xl w-11/12 mx-auto bg-white rounded-2xl shadow-2xl relative">
+            <button id="kpi-details-modal-close" class="absolute top-4 right-4 text-white hover:text-gray-200 transition z-10">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <header id="kpi-modal-header" class="p-6 text-white" style="background: linear-gradient(90deg, var(--brand-dark) 0%, var(--brand-primary) 100%);">
+                <h2 id="kpi-modal-title" class="text-2xl font-bold">Detalle de Productos</h2>
+            </header>
+            <div class="p-6 max-h-[60vh] overflow-y-auto">
+                <div class="overflow-x-auto border rounded-lg">
+                    <table id="kpi-modal-table" class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
                                 <th scope="col" class="w-6/12 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Producto</th>
@@ -329,14 +369,14 @@
             let currentSort = { key: 'stock_actual', order: 'desc' };
             let selectedStatuses = [];
             let inventoryStatusChart;
+            let salesTrendChart;
 
+            // --- Selectores de Elementos ---
             const salesChartLoader = document.getElementById('sales-chart-loader');
             const inventoryLoader = document.getElementById('inventory-loader');
             const infoModalOverlay = document.getElementById('info-modal-overlay');
             const infoModalTrigger = document.getElementById('info-modal-trigger');
             const infoModalClose = document.getElementById('info-modal-close');
-            const doiTrigger = document.getElementById('doi-trigger');
-            const doiExplanation = document.getElementById('doi-explanation');
 
             const reportsLink = document.getElementById('reports-link');
             const kpiRisk = document.getElementById('kpi-risk-products');
@@ -350,6 +390,22 @@
             const riskKpiTrigger = document.getElementById('risk-kpi-trigger');
             const stagnantKpiTrigger = document.getElementById('stagnant-kpi-trigger');
 
+            const salesLink = document.getElementById('sales-analysis-link');
+            const inventoryLink = document.getElementById('inventory-intelligence-link');
+            const categoryFilterSales = document.getElementById('category-filter-sales');
+            const topNFilter = document.getElementById('top-n-filter');
+            const chartCanvas = document.getElementById('topProductsChart');
+            const chartTitle = document.getElementById('chart-title');
+            let topProductsChart;
+            const categoryFilterInventory = document.getElementById('category-filter-inventory');
+            const statusFilterContainer = document.getElementById('status-filter-inventory');
+            const statusFilterButton = statusFilterContainer.querySelector('button');
+            const statusFilterText = document.getElementById('status-filter-text');
+            const statusFilterOptions = document.getElementById('status-filter-options');
+            const inventoryTableBody = document.getElementById('inventory-table-body');
+            const inventoryTableHeaders = document.querySelectorAll('#inventory-table .sortable-header');
+
+            // --- Gestor de Carga (Loader) ---
             const createLoaderManager = (loaderElement) => {
                 const progressBar = loaderElement.querySelector('.progress-bar');
                 let progressInterval;
@@ -377,21 +433,7 @@
             const salesLoader = createLoaderManager(salesChartLoader);
             const inventoryLoaderManager = createLoaderManager(inventoryLoader);
 
-            const salesLink = document.getElementById('sales-analysis-link');
-            const inventoryLink = document.getElementById('inventory-intelligence-link');
-            const categoryFilterSales = document.getElementById('category-filter-sales');
-            const topNFilter = document.getElementById('top-n-filter');
-            const chartCanvas = document.getElementById('topProductsChart');
-            const chartTitle = document.getElementById('chart-title');
-            let topProductsChart;
-            const categoryFilterInventory = document.getElementById('category-filter-inventory');
-            const statusFilterContainer = document.getElementById('status-filter-inventory');
-            const statusFilterButton = statusFilterContainer.querySelector('button');
-            const statusFilterText = document.getElementById('status-filter-text');
-            const statusFilterOptions = document.getElementById('status-filter-options');
-            const inventoryTableBody = document.getElementById('inventory-table-body');
-            const inventoryTableHeaders = document.querySelectorAll('#inventory-table .sortable-header');
-
+            // --- Navegación entre Secciones ---
             const switchSection = (targetSection) => {
                 document.querySelectorAll('.dashboard-section').forEach(s => s.classList.remove('active'));
                 document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
@@ -400,9 +442,18 @@
             };
 
             salesLink.addEventListener('click', (e) => { e.preventDefault(); switchSection('sales-analysis'); });
-            inventoryLink.addEventListener('click', (e) => { e.preventDefault(); switchSection('inventory-intelligence'); if(inventoryTableBody.innerHTML === '') fetchInventoryData(); });
-            reportsLink.addEventListener('click', (e) => { e.preventDefault(); switchSection('reports'); fetchInventoryHealthReport(); });
+            inventoryLink.addEventListener('click', (e) => { e.preventDefault(); switchSection('inventory-intelligence'); fetchInventoryData(); });
+            reportsLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                switchSection('reports');
+                if (allInventoryData.length === 0) {
+                     fetchInventoryData(true); // Carga silenciosa
+                }
+                fetchInventoryHealthReport();
+                fetchSalesTrendData();
+            });
 
+            // --- Lógica de Análisis de Ventas ---
             const fetchSalesData = async () => {
                 salesLoader.show();
                 const category = categoryFilterSales.value;
@@ -428,11 +479,7 @@
                         indexAxis: 'y', responsive: true, maintainAspectRatio: false,
                         scales: { x: { beginAtZero: true, ticks: { precision: 0 } }, y: { ticks: { autoSkip: false } } },
                         plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `${context.raw} unidades` } } },
-                        animation: {
-                            onComplete: () => {
-                                salesLoader.hide();
-                            }
-                        }
+                        animation: { onComplete: () => salesLoader.hide() }
                     }
                 });
             };
@@ -445,29 +492,32 @@
                 topProductsChart.update();
             };
 
-            const fetchInventoryData = async () => {
-                inventoryLoaderManager.show();
-                selectedStatuses = [];
-                updateStatusFilterText();
-                currentSort = { key: 'stock_actual', order: 'desc' };
-                inventoryTableHeaders.forEach(h => h.classList.remove('active', 'asc', 'desc'));
-                document.querySelector('[data-sort="stock_actual"]').classList.add('active', 'desc');
+            // --- Lógica de Inteligencia de Inventario ---
+            const fetchInventoryData = async (isSilent = false) => {
+                if (!isSilent) inventoryLoaderManager.show();
 
-                const category = categoryFilterInventory.value;
-                let url = `/api/data/inventory_analysis?category=${encodeURIComponent(category)}`;
+                if(!isSilent) {
+                    selectedStatuses = [];
+                    updateStatusFilterText();
+                    currentSort = { key: 'stock_actual', order: 'desc' };
+                    inventoryTableHeaders.forEach(h => h.classList.remove('active', 'asc', 'desc'));
+                    document.querySelector('[data-sort="stock_actual"]').classList.add('active', 'desc');
+                }
+
+                let url = `/api/data/inventory_analysis?category=all`; // Siempre traer todo para los modales
                 try {
                     const response = await fetch(url);
                     if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
                     const data = await response.json();
                     allInventoryData = data;
                     populateStatusFilter(allInventoryData);
-                    applyInventoryFiltersAndSort();
+                    if(!isSilent) applyInventoryFiltersAndSort();
                 } catch (error) {
                     console.error('Error en fetchInventoryData:', error);
                     allInventoryData = [];
-                    renderInventoryTable(inventoryTableBody, []);
+                    if(!isSilent) renderInventoryTable(inventoryTableBody, []);
                 } finally {
-                    inventoryLoaderManager.hide();
+                    if (!isSilent) inventoryLoaderManager.hide();
                 }
             };
 
@@ -508,17 +558,18 @@
 
             const applyInventoryFiltersAndSort = () => {
                 let processedData = [...allInventoryData];
-
+                const category = categoryFilterInventory.value;
+                if (category !== 'all') {
+                    processedData = processedData.filter(p => p.categoria && p.categoria.trim() === category.trim());
+                }
                 if (selectedStatuses.length > 0) {
                     processedData = processedData.filter(p => selectedStatuses.includes(p.estado));
                 }
-
                 if (currentSort.key) {
                     processedData.sort((a, b) => {
                         return currentSort.order === 'desc' ? b[currentSort.key] - a[currentSort.key] : a[currentSort.key] - b[currentSort.key];
                     });
                 }
-
                 renderInventoryTable(inventoryTableBody, processedData);
             };
 
@@ -528,6 +579,7 @@
                     case 'Sin Stock': return 'bg-red-200 text-red-900 font-bold';
                     case 'Lenta Rotación': return 'bg-yellow-100 text-yellow-800';
                     case 'Inventario Estancado': return 'bg-gray-200 text-gray-800';
+                    case 'Alta Rotación': return 'bg-blue-100 text-blue-800';
                     default: return 'bg-green-100 text-green-800';
                 }
             };
@@ -535,14 +587,20 @@
             const renderInventoryTable = (targetBody, products) => {
                 targetBody.innerHTML = '';
                 if (!products || products.length === 0) {
-                    targetBody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-gray-500">No hay datos para los filtros seleccionados.</td></tr>`;
+                    let message = 'No hay datos para los filtros seleccionados.';
+                    if (targetBody.id === 'kpi-modal-table-body') {
+                        message = 'No se encontraron productos con este estado.';
+                    }
+                    targetBody.innerHTML = `<tr><td colspan="4" class="text-center py-8 text-gray-500">${message}</td></tr>`;
                 } else {
                     products.forEach(p => {
                         const row = document.createElement('tr');
                         row.innerHTML = `
-                            <td class="px-6 py-4 text-sm font-medium text-gray-900 truncate" title="${p.nombre_del_producto}" data-label="Producto">${p.nombre_del_producto}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" data-label="Stock Actual">${p.stock_actual}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" data-label="Ventas (30d)">${p.unidades_vendidas_30d}</td>
+                            <td class="px-6 py-4 text-sm font-medium text-gray-900" data-label="Producto">
+                                <span class="block truncate" title="${p.nombre_del_producto}">${p.nombre_del_producto}</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" data-label="Stock Actual">${p.stock_actual}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" data-label="Ventas (30d)">${p.unidades_vendidas_30d}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium" data-label="Estado">
                                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(p.estado)}">
                                     ${p.estado}
@@ -554,6 +612,7 @@
                 }
             };
 
+            // --- Lógica de Informes ---
             const fetchInventoryHealthReport = async () => {
                 try {
                     const response = await fetch('/api/reports/inventory_health');
@@ -583,6 +642,7 @@
                     if (colorClass.includes('yellow-100')) return '#FBBF24';
                     if (colorClass.includes('gray-200')) return '#D1D5DB';
                     if (colorClass.includes('green-100')) return '#34D399';
+                    if (colorClass.includes('blue-100')) return '#BFDBFE';
                     return '#9CA3AF';
                 });
 
@@ -608,14 +668,7 @@
                             responsive: true,
                             maintainAspectRatio: false,
                             plugins: {
-                                legend: {
-                                    position: 'right',
-                                    onClick: (e, legendItem, legend) => {
-                                        const chart = legend.chart;
-                                        chart.toggleDataVisibility(legendItem.index);
-                                        chart.update();
-                                    }
-                                },
+                                legend: { position: 'right' },
                                 datalabels: {
                                     formatter: (value, ctx) => {
                                         let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
@@ -623,9 +676,7 @@
                                         return percentage;
                                     },
                                     color: '#374151',
-                                    font: {
-                                        weight: 'bold'
-                                    }
+                                    font: { weight: 'bold' }
                                 }
                             }
                         },
@@ -634,39 +685,125 @@
                 }
             };
 
-            const showKpiDetailsModal = (status) => {
-                kpiModalTitle.textContent = `Detalle de Productos: ${status}`;
+            // --- LÓGICA PARA GRÁFICO DE TENDENCIA ---
+            const generateMockTrendData = (days) => {
+                const data = [];
+                let currentValue = 50 + Math.random() * 50;
+                for (let i = days - 1; i >= 0; i--) {
+                    const date = new Date();
+                    date.setDate(date.getDate() - i);
+                    data.push({
+                        fecha: date.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' }),
+                        unidades: Math.round(currentValue)
+                    });
+                    currentValue += (Math.random() - 0.45) * 10;
+                    if (currentValue < 10) currentValue = 10;
+                }
+                return data;
+            };
+
+            const fetchSalesTrendData = async () => {
+                const periodSelect = document.getElementById('sales-trend-period');
+                const period = periodSelect.value;
+                let days = 30;
+                if (period === '90d') days = 90;
+                else if (period === '180d') days = 180;
+                else if (period === '365d') days = 365;
+
+                const data = generateMockTrendData(days);
+                updateSalesTrendChart(data);
+            };
+
+            const initializeSalesTrendChart = () => {
+                const ctx = document.getElementById('salesTrendChart').getContext('2d');
+                salesTrendChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: 'Unidades Vendidas',
+                            data: [],
+                            borderColor: 'var(--brand-primary)',
+                            backgroundColor: 'rgba(0, 184, 212, 0.1)',
+                            fill: true,
+                            tension: 0.3,
+                            pointBackgroundColor: 'var(--brand-primary)',
+                            pointRadius: 2,
+                            pointHoverRadius: 5
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: { y: { beginAtZero: true } },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { mode: 'index', intersect: false, callbacks: { label: (context) => `${context.raw} unidades` } }
+                        },
+                        interaction: { mode: 'index', intersect: false }
+                    }
+                });
+            };
+
+            const updateSalesTrendChart = (trendData) => {
+                if (!salesTrendChart) return;
+                const labels = trendData.map(d => d.fecha);
+                const data = trendData.map(d => d.unidades);
+                salesTrendChart.data.labels = labels;
+                salesTrendChart.data.datasets[0].data = data;
+                salesTrendChart.update();
+            };
+
+            // --- Lógica de Modales ---
+            const showKpiDetailsModal = async (status) => {
+                if (allInventoryData.length === 0) {
+                    console.log("Datos de inventario no encontrados, iniciando carga silenciosa...");
+                    try {
+                        await fetchInventoryData(true);
+                        console.log("Carga silenciosa completada. Mostrando modal.");
+                    } catch (error) {
+                        console.error("Falló la carga silenciosa de datos. No se puede mostrar el modal.", error);
+                        return;
+                    }
+                }
+                kpiModalTitle.textContent = `Detalle: ${status}`;
                 const filteredProducts = allInventoryData.filter(p => p.estado === status);
                 renderInventoryTable(kpiModalTableBody, filteredProducts);
                 kpiDetailsModalOverlay.classList.add('visible');
             };
 
+            // --- Inicialización del Dashboard ---
             const initializeDashboard = async () => {
                 initializeTopProductsChart();
+                initializeSalesTrendChart();
 
-                const response = await fetch('/api/categories');
-                const categories = await response.json();
-                categories.forEach(cat => {
-                    if (cat) {
-                        const option1 = document.createElement('option');
-                          categoryFilterSales.appendChild(option1);
+                try {
+                    const response = await fetch('/api/categories');
+                    const categories = await response.json();
+                    categories.forEach(cat => {
+                        if (cat) {
+                            const option1 = document.createElement('option');
+                            option1.value = cat; option1.textContent = cat;
+                            categoryFilterSales.appendChild(option1);
 
-                        const option2 = document.createElement('option');
-                        option2.value = cat; option2.textContent = cat;
-                        categoryFilterInventory.appendChild(option2);
-                    }
-                });
+                            const option2 = document.createElement('option');
+                            option2.value = cat; option2.textContent = cat;
+                            categoryFilterInventory.appendChild(option2);
+                        }
+                    });
+                } catch (error) {
+                    console.error("Error al cargar categorías", error);
+                }
 
                 await fetchSalesData();
 
+                // --- Event Listeners ---
                 categoryFilterSales.addEventListener('change', fetchSalesData);
                 topNFilter.addEventListener('change', fetchSalesData);
-                categoryFilterInventory.addEventListener('change', fetchInventoryData);
+                categoryFilterInventory.addEventListener('change', () => applyInventoryFiltersAndSort());
+                document.getElementById('sales-trend-period').addEventListener('change', fetchSalesTrendData);
 
-                statusFilterButton.addEventListener('click', () => {
-                    statusFilterOptions.classList.toggle('hidden');
-                });
-
+                statusFilterButton.addEventListener('click', () => statusFilterOptions.classList.toggle('hidden'));
                 document.addEventListener('click', (e) => {
                     if (!statusFilterContainer.contains(e.target)) {
                         statusFilterOptions.classList.add('hidden');
@@ -682,39 +819,27 @@
                             currentSort.key = sortKey;
                             currentSort.order = 'desc';
                         }
-
                         inventoryTableHeaders.forEach(h => h.classList.remove('active', 'asc', 'desc'));
                         header.classList.add('active', currentSort.order);
-
                         applyInventoryFiltersAndSort();
                     });
                 });
 
                 infoModalTrigger.addEventListener('click', () => infoModalOverlay.classList.add('visible'));
                 infoModalClose.addEventListener('click', () => infoModalOverlay.classList.remove('visible'));
-                infoModalOverlay.addEventListener('click', (e) => {
-                    if (e.target === infoModalOverlay) {
-                        infoModalOverlay.classList.remove('visible');
-                    }
-                });
-                document.addEventListener('keydown', (e) => {
-                    if (e.key === "Escape") {
-                        infoModalOverlay.classList.remove('visible');
-                        kpiDetailsModalOverlay.classList.remove('visible');
-                    }
-                });
-                doiTrigger.addEventListener('click', () => {
-                    doiExplanation.classList.toggle('hidden');
-                });
 
                 riskKpiTrigger.addEventListener('click', () => showKpiDetailsModal('Riesgo de Quiebre'));
                 stagnantKpiTrigger.addEventListener('click', () => showKpiDetailsModal('Inventario Estancado'));
                 kpiDetailsModalClose.addEventListener('click', () => kpiDetailsModalOverlay.classList.remove('visible'));
-                kpiDetailsModalOverlay.addEventListener('click', (e) => {
-                    if (e.target === kpiDetailsModalOverlay) {
-                        kpiDetailsModalOverlay.classList.remove('visible');
-                    }
-                });
+
+                const closeModal = () => {
+                    infoModalOverlay.classList.remove('visible');
+                    kpiDetailsModalOverlay.classList.remove('visible');
+                }
+
+                document.addEventListener('keydown', (e) => { if (e.key === "Escape") closeModal(); });
+                infoModalOverlay.addEventListener('click', (e) => { if (e.target === infoModalOverlay) closeModal(); });
+                kpiDetailsModalOverlay.addEventListener('click', (e) => { if (e.target === kpiDetailsModalOverlay) closeModal(); });
             };
 
             initializeDashboard();
