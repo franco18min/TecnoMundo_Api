@@ -1,5 +1,3 @@
-# app/api.py
-
 from flask import Blueprint, render_template, jsonify, request
 from app.services.dashboard_service import DashboardService
 from .extensions import cache  # Importamos 'cache' desde el nuevo archivo extensions.py
@@ -89,3 +87,4 @@ def get_inventory_health_report():
     except Exception as e:
         logger.error(f"Error en el endpoint /reports/inventory_health: {e}")
         return jsonify({"error": "Error interno del servidor"}), 500
+

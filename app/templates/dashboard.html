@@ -6,7 +6,6 @@
     <title>TecnoApp - Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Plugin para mostrar etiquetas dentro de los gráficos -->
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <style>
         body { font-family: 'Inter', sans-serif; }
@@ -96,6 +95,12 @@
             transform: scale(1);
         }
 
+        /* MODIFICACIÓN PARA AJUSTAR LA TABLA */
+        #inventory-table, #kpi-modal-table {
+            table-layout: fixed;
+            width: 100%;
+        }
+
         @media (max-width: 768px) {
             #inventory-table thead, #kpi-modal-table thead { display: none; }
             #inventory-table, #inventory-table tbody, #inventory-table tr, #inventory-table td,
@@ -110,7 +115,6 @@
 <body class="bg-gray-100 text-gray-800">
 
     <div class="flex h-screen bg-gray-100">
-        <!-- Sidebar -->
         <aside class="w-64 bg-white shadow-lg flex flex-col">
             <div class="p-6 border-b flex items-center justify-center">
                 <h2 class="text-3xl font-extrabold" style="color: var(--brand-primary);">TecnoApp</h2>
@@ -132,12 +136,10 @@
             </nav>
         </aside>
 
-        <!-- Main Content -->
         <main class="flex-1 flex flex-col overflow-hidden">
             <div class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100">
                 <div class="container mx-auto p-4 md:p-8">
 
-                    <!-- Sección de Análisis de Ventas -->
                     <div id="sales-analysis-section" class="dashboard-section active">
                         <header class="mb-8 p-6 rounded-xl shadow-lg text-white" style="background: linear-gradient(90deg, var(--brand-primary) 0%, var(--brand-dark) 100%);">
                             <h1 class="text-4xl font-extrabold tracking-tight">Análisis de Ventas</h1>
@@ -171,7 +173,6 @@
                         </div>
                     </div>
 
-                    <!-- Sección de Inteligencia de Inventario -->
                     <div id="inventory-intelligence-section" class="dashboard-section">
                         <header class="mb-8 p-6 rounded-xl shadow-lg text-white" style="background: linear-gradient(90deg, var(--brand-dark) 0%, var(--brand-primary) 100%);">
                             <h1 class="text-4xl font-extrabold tracking-tight">Inteligencia de Inventario</h1>
@@ -226,7 +227,6 @@
                         </div>
                     </div>
 
-                    <!-- SECCIÓN DE INFORMES -->
                     <div id="reports-section" class="dashboard-section">
                         <header class="mb-8 p-6 rounded-xl shadow-lg text-white" style="background: linear-gradient(90deg, #005f6b 0%, #00b8d4 100%);">
                             <h1 class="text-4xl font-extrabold tracking-tight">Informe de Salud de Inventario</h1>
@@ -269,7 +269,6 @@
                              </div>
                         </div>
 
-                        <!-- NUEVO GRÁFICO DE TENDENCIA DE VENTAS -->
                         <div class="bg-white rounded-lg shadow p-6 mt-8">
                             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
                                  <h3 class="text-xl font-semibold">Tendencia de Ventas</h3>
@@ -293,7 +292,6 @@
         </main>
     </div>
 
-    <!-- Ventana Modal de Información -->
     <div id="info-modal-overlay" class="modal-overlay">
         <div class="modal-content max-w-2xl w-11/12 mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden relative">
              <button id="info-modal-close" class="absolute top-4 right-4 text-white hover:text-gray-200 transition z-10">
@@ -334,7 +332,6 @@
         </div>
     </div>
 
-    <!-- VENTANA MODAL PARA DETALLES DE KPI -->
     <div id="kpi-details-modal-overlay" class="modal-overlay">
         <div class="modal-content max-w-4xl w-11/12 mx-auto bg-white rounded-2xl shadow-2xl relative">
             <button id="kpi-details-modal-close" class="absolute top-4 right-4 text-white hover:text-gray-200 transition z-10">
@@ -355,8 +352,7 @@
                             </tr>
                         </thead>
                         <tbody id="kpi-modal-table-body" class="bg-white divide-y divide-gray-200">
-                            <!-- Contenido dinámico -->
-                        </tbody>
+                            </tbody>
                     </table>
                 </div>
             </div>
@@ -504,14 +500,21 @@
                     document.querySelector('[data-sort="stock_actual"]').classList.add('active', 'desc');
                 }
 
-                let url = `/api/data/inventory_analysis?category=all`; // Siempre traer todo para los modales
+                const category = categoryFilterInventory.value;
+                let url = `/api/data/inventory_analysis?category=${encodeURIComponent(category)}`;
+
                 try {
                     const response = await fetch(url);
                     if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
                     const data = await response.json();
+
                     allInventoryData = data;
-                    populateStatusFilter(allInventoryData);
-                    if(!isSilent) applyInventoryFiltersAndSort();
+
+                    if(!isSilent) {
+                        populateStatusFilter(allInventoryData);
+                    }
+
+                    applyInventoryFiltersAndSort();
                 } catch (error) {
                     console.error('Error en fetchInventoryData:', error);
                     allInventoryData = [];
@@ -558,13 +561,11 @@
 
             const applyInventoryFiltersAndSort = () => {
                 let processedData = [...allInventoryData];
-                const category = categoryFilterInventory.value;
-                if (category !== 'all') {
-                    processedData = processedData.filter(p => p.categoria && p.categoria.trim() === category.trim());
-                }
+
                 if (selectedStatuses.length > 0) {
                     processedData = processedData.filter(p => selectedStatuses.includes(p.estado));
                 }
+
                 if (currentSort.key) {
                     processedData.sort((a, b) => {
                         return currentSort.order === 'desc' ? b[currentSort.key] - a[currentSort.key] : a[currentSort.key] - b[currentSort.key];
@@ -800,7 +801,11 @@
                 // --- Event Listeners ---
                 categoryFilterSales.addEventListener('change', fetchSalesData);
                 topNFilter.addEventListener('change', fetchSalesData);
-                categoryFilterInventory.addEventListener('change', () => applyInventoryFiltersAndSort());
+
+                categoryFilterInventory.addEventListener('change', () => {
+                    fetchInventoryData();
+                });
+
                 document.getElementById('sales-trend-period').addEventListener('change', fetchSalesTrendData);
 
                 statusFilterButton.addEventListener('click', () => statusFilterOptions.classList.toggle('hidden'));
