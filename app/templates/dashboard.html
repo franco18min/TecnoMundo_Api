@@ -6,11 +6,11 @@
     <title>TecnoApp - Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <style>
         body { font-family: 'Inter', sans-serif; }
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
         :root {
             --brand-primary: #00b8d4;
             --brand-dark: #005f6b;
@@ -19,88 +19,26 @@
             --sidebar-hover-bg: #e0f7fa;
             --sidebar-hover-text: var(--brand-dark);
         }
-
         .sidebar-link { transition: all 0.2s ease-in-out; }
-        .sidebar-link.active {
-            background-color: var(--sidebar-active-bg);
-            color: var(--sidebar-active-text);
-            font-weight: 600;
-        }
-        .sidebar-link:not(.active):hover {
-            background-color: var(--sidebar-hover-bg);
-            color: var(--sidebar-hover-text);
-        }
+        .sidebar-link.active { background-color: var(--sidebar-active-bg); color: var(--sidebar-active-text); font-weight: 600; }
+        .sidebar-link:not(.active):hover { background-color: var(--sidebar-hover-bg); color: var(--sidebar-hover-text); }
         .dashboard-section { display: none; }
         .dashboard-section.active { display: block; }
-
-        .loader-overlay {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-color: rgba(255, 255, 255, 0.85);
-            z-index: 10;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            gap: 1rem;
-            transition: opacity 0.3s;
-            border-radius: 0.75rem;
-        }
-        .loader-overlay.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
-        .progress-bar-container {
-            width: 50%;
-            height: 8px;
-            background-color: #e0e0e0;
-            border-radius: 4px;
-            overflow: hidden;
-        }
-        .progress-bar {
-            width: 0%;
-            height: 100%;
-            background-color: var(--brand-primary);
-            transition: width 0.2s ease-out;
-        }
-
+        .loader-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255, 255, 255, 0.85); z-index: 10; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 1rem; transition: opacity 0.3s; border-radius: 0.75rem; }
+        .loader-overlay.hidden { opacity: 0; pointer-events: none; }
+        .progress-bar-container { width: 50%; height: 8px; background-color: #e0e0e0; border-radius: 4px; overflow: hidden; }
+        .progress-bar { width: 0%; height: 100%; background-color: var(--brand-primary); transition: width 0.2s ease-out; }
         .sortable-header { cursor: pointer; user-select: none; }
         .sortable-header:hover { color: var(--brand-dark); }
         .sort-icon { display: inline-block; margin-left: 0.5rem; opacity: 0.5; transition: all 0.2s; }
         .sortable-header.active .sort-icon { opacity: 1; }
         .sortable-header.asc .sort-icon { transform: rotate(0deg); }
         .sortable-header.desc .sort-icon { transform: rotate(180deg); }
-
-        .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 50;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease-in-out;
-        }
-        .modal-overlay.visible {
-            opacity: 1;
-            pointer-events: auto;
-        }
-        .modal-content {
-            transform: scale(0.95);
-            transition: transform 0.3s ease-in-out;
-        }
-        .modal-overlay.visible .modal-content {
-            transform: scale(1);
-        }
-
-        /* MODIFICACIÓN PARA AJUSTAR LA TABLA */
-        #inventory-table, #kpi-modal-table {
-            table-layout: fixed;
-            width: 100%;
-        }
-
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.5); z-index: 50; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s ease-in-out; }
+        .modal-overlay.visible { opacity: 1; pointer-events: auto; }
+        .modal-content { transform: scale(0.95); transition: transform 0.3s ease-in-out; }
+        .modal-overlay.visible .modal-content { transform: scale(1); }
+        #inventory-table, #kpi-modal-table { table-layout: fixed; width: 100%; }
         @media (max-width: 768px) {
             #inventory-table thead, #kpi-modal-table thead { display: none; }
             #inventory-table, #inventory-table tbody, #inventory-table tr, #inventory-table td,
@@ -271,18 +209,24 @@
 
                         <div class="bg-white rounded-lg shadow p-6 mt-8">
                             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
-                                 <h3 class="text-xl font-semibold">Tendencia de Ventas</h3>
                                  <div>
-                                     <label for="sales-trend-period" class="text-sm font-medium text-gray-700 mr-2">Período:</label>
-                                     <select id="sales-trend-period" class="rounded-md border-gray-300 shadow-sm focus:border-[var(--brand-primary)] focus:ring-[var(--brand-primary)] sm:text-sm">
-                                         <option value="30d" selected>Últimos 30 días</option>
-                                         <option value="90d">Últimos 90 días</option>
-                                         <option value="180d">Últimos 6 meses</option>
-                                         <option value="365d">Último Año</option>
-                                     </select>
+                                     <h3 class="text-xl font-semibold">Tendencia de Ventas</h3>
+                                     <h4 id="sales-trend-title" class="text-sm font-medium text-gray-500 mt-1">Seleccione un rango de fechas</h4>
+                                 </div>
+                                 <div class="flex items-center gap-2 flex-wrap">
+                                     <label for="sales-trend-start-date" class="text-sm font-medium text-gray-700">Desde:</label>
+                                     <input type="date" id="sales-trend-start-date" class="rounded-md border-gray-300 shadow-sm focus:border-[var(--brand-primary)] focus:ring-[var(--brand-primary)] sm:text-sm">
+                                     <label for="sales-trend-end-date" class="text-sm font-medium text-gray-700">Hasta:</label>
+                                     <input type="date" id="sales-trend-end-date" class="rounded-md border-gray-300 shadow-sm focus:border-[var(--brand-primary)] focus:ring-[var(--brand-primary)] sm:text-sm">
                                  </div>
                             </div>
-                            <div class="h-96 w-full mx-auto">
+                            <div class="h-96 w-full mx-auto relative">
+                                <div id="sales-trend-loader" class="loader-overlay hidden">
+                                    <div class="progress-bar-container">
+                                        <div class="progress-bar"></div>
+                                    </div>
+                                    <p class="text-sm font-medium text-[var(--brand-dark)]">Cargando datos de tendencia...</p>
+                                </div>
                                 <canvas id="salesTrendChart"></canvas>
                             </div>
                         </div>
@@ -308,7 +252,7 @@
                         <p class="text-sm">Estos productos se venden muy rápidamente. Es crucial monitorear su stock de cerca para evitar quiebres.</p>
                     </div>
                     <div>
-                        <h4 class="font-semibold text-gray-800">Saludable (<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Saludable</span>)</h4>
+                        <h4 class="font-semibold text-gray-800">Rotación Saludable (<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Rotación Saludable</span>)</h4>
                         <p class="text-sm">El producto tiene suficiente stock para cubrir la demanda proyectada, pero no en exceso.</p>
                     </div>
                     <div>
@@ -366,33 +310,31 @@
             let selectedStatuses = [];
             let inventoryStatusChart;
             let salesTrendChart;
+            let topProductsChart;
 
             // --- Selectores de Elementos ---
             const salesChartLoader = document.getElementById('sales-chart-loader');
             const inventoryLoader = document.getElementById('inventory-loader');
+            const salesTrendLoaderElement = document.getElementById('sales-trend-loader');
             const infoModalOverlay = document.getElementById('info-modal-overlay');
             const infoModalTrigger = document.getElementById('info-modal-trigger');
             const infoModalClose = document.getElementById('info-modal-close');
-
             const reportsLink = document.getElementById('reports-link');
             const kpiRisk = document.getElementById('kpi-risk-products');
             const kpiStagnant = document.getElementById('kpi-stagnant-products');
             const kpiHealthy = document.getElementById('kpi-healthy-percentage');
-
             const kpiDetailsModalOverlay = document.getElementById('kpi-details-modal-overlay');
             const kpiDetailsModalClose = document.getElementById('kpi-details-modal-close');
             const kpiModalTitle = document.getElementById('kpi-modal-title');
             const kpiModalTableBody = document.getElementById('kpi-modal-table-body');
             const riskKpiTrigger = document.getElementById('risk-kpi-trigger');
             const stagnantKpiTrigger = document.getElementById('stagnant-kpi-trigger');
-
             const salesLink = document.getElementById('sales-analysis-link');
             const inventoryLink = document.getElementById('inventory-intelligence-link');
             const categoryFilterSales = document.getElementById('category-filter-sales');
             const topNFilter = document.getElementById('top-n-filter');
             const chartCanvas = document.getElementById('topProductsChart');
             const chartTitle = document.getElementById('chart-title');
-            let topProductsChart;
             const categoryFilterInventory = document.getElementById('category-filter-inventory');
             const statusFilterContainer = document.getElementById('status-filter-inventory');
             const statusFilterButton = statusFilterContainer.querySelector('button');
@@ -400,6 +342,9 @@
             const statusFilterOptions = document.getElementById('status-filter-options');
             const inventoryTableBody = document.getElementById('inventory-table-body');
             const inventoryTableHeaders = document.querySelectorAll('#inventory-table .sortable-header');
+            const salesTrendTitle = document.getElementById('sales-trend-title');
+            const salesTrendStartDate = document.getElementById('sales-trend-start-date');
+            const salesTrendEndDate = document.getElementById('sales-trend-end-date');
 
             // --- Gestor de Carga (Loader) ---
             const createLoaderManager = (loaderElement) => {
@@ -428,6 +373,7 @@
 
             const salesLoader = createLoaderManager(salesChartLoader);
             const inventoryLoaderManager = createLoaderManager(inventoryLoader);
+            const salesTrendLoader = createLoaderManager(salesTrendLoaderElement);
 
             // --- Navegación entre Secciones ---
             const switchSection = (targetSection) => {
@@ -435,19 +381,19 @@
                 document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
                 document.getElementById(`${targetSection}-section`).classList.add('active');
                 document.getElementById(`${targetSection}-link`).classList.add('active');
+
+                // Lógica de carga específica de la sección
+                if (targetSection === 'inventory-intelligence') {
+                    if (allInventoryData.length === 0) fetchInventoryData();
+                } else if (targetSection === 'reports') {
+                    fetchInventoryHealthReport();
+                    initializeDatePickersAndFetchTrend();
+                }
             };
 
             salesLink.addEventListener('click', (e) => { e.preventDefault(); switchSection('sales-analysis'); });
-            inventoryLink.addEventListener('click', (e) => { e.preventDefault(); switchSection('inventory-intelligence'); fetchInventoryData(); });
-            reportsLink.addEventListener('click', (e) => {
-                e.preventDefault();
-                switchSection('reports');
-                if (allInventoryData.length === 0) {
-                     fetchInventoryData(true); // Carga silenciosa
-                }
-                fetchInventoryHealthReport();
-                fetchSalesTrendData();
-            });
+            inventoryLink.addEventListener('click', (e) => { e.preventDefault(); switchSection('inventory-intelligence'); });
+            reportsLink.addEventListener('click', (e) => { e.preventDefault(); switchSection('reports'); });
 
             // --- Lógica de Análisis de Ventas ---
             const fetchSalesData = async () => {
@@ -457,11 +403,14 @@
                 let url = `/api/data/sales_analysis?top_n=${topN}&category=${encodeURIComponent(category)}`;
                 try {
                     const response = await fetch(url);
+                    if (!response.ok) throw new Error(`Error en la respuesta de la API: ${response.statusText}`);
                     const data = await response.json();
-                    chartTitle.textContent = `Top ${topN} Productos Vendidos (por Cantidad)`;
+                    const categoryText = categoryFilterSales.options[categoryFilterSales.selectedIndex].text;
+                    chartTitle.textContent = `Top ${topN} Productos Vendidos (${categoryText})`;
                     updateTopProductsChart(data.top_products_by_quantity);
                 } catch (error) {
                     console.error('Error en fetchSalesData:', error);
+                    chartTitle.textContent = 'Error al cargar los datos';
                     updateTopProductsChart([]);
                 }
             };
@@ -481,17 +430,17 @@
             };
 
             const updateTopProductsChart = (products) => {
+                if (!topProductsChart) return;
                 if (!products || products.length === 0) products = [];
                 chartCanvas.parentElement.style.height = `${Math.max(384, products.length * 25 + 120)}px`;
-                topProductsChart.data.labels = products.length ? products.map(p => p.nombre_del_producto) : ['Sin datos'];
-                topProductsChart.data.datasets[0].data = products.length ? products.map(p => p.total_unidades) : [0];
+                topProductsChart.data.labels = products.length > 0 ? products.map(p => p.nombre_del_producto) : ['Sin datos para mostrar'];
+                topProductsChart.data.datasets[0].data = products.length > 0 ? products.map(p => p.total_unidades) : [0];
                 topProductsChart.update();
             };
 
             // --- Lógica de Inteligencia de Inventario ---
             const fetchInventoryData = async (isSilent = false) => {
                 if (!isSilent) inventoryLoaderManager.show();
-
                 if(!isSilent) {
                     selectedStatuses = [];
                     updateStatusFilterText();
@@ -499,21 +448,16 @@
                     inventoryTableHeaders.forEach(h => h.classList.remove('active', 'asc', 'desc'));
                     document.querySelector('[data-sort="stock_actual"]').classList.add('active', 'desc');
                 }
-
                 const category = categoryFilterInventory.value;
                 let url = `/api/data/inventory_analysis?category=${encodeURIComponent(category)}`;
-
                 try {
                     const response = await fetch(url);
                     if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
                     const data = await response.json();
-
                     allInventoryData = data;
-
                     if(!isSilent) {
                         populateStatusFilter(allInventoryData);
                     }
-
                     applyInventoryFiltersAndSort();
                 } catch (error) {
                     console.error('Error en fetchInventoryData:', error);
@@ -529,17 +473,9 @@
                 statusFilterOptions.innerHTML = '';
                 statuses.forEach(status => {
                     const colorClass = getStatusColor(status);
-                    const optionHTML = `
-                        <label class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">
-                            <input type="checkbox" class="h-4 w-4 rounded border-gray-300 text-[var(--brand-primary)] focus:ring-[var(--brand-primary)]" value="${status}">
-                            <span class="ml-3 flex items-center">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${colorClass}">${status}</span>
-                            </span>
-                        </label>
-                    `;
+                    const optionHTML = `<label class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"><input type="checkbox" class="h-4 w-4 rounded border-gray-300 text-[var(--brand-primary)] focus:ring-[var(--brand-primary)]" value="${status}"><span class="ml-3 flex items-center"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${colorClass}">${status}</span></span></label>`;
                     statusFilterOptions.insertAdjacentHTML('beforeend', optionHTML);
                 });
-
                 statusFilterOptions.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
                     checkbox.addEventListener('change', () => {
                         selectedStatuses = Array.from(statusFilterOptions.querySelectorAll('input:checked')).map(cb => cb.value);
@@ -561,11 +497,9 @@
 
             const applyInventoryFiltersAndSort = () => {
                 let processedData = [...allInventoryData];
-
                 if (selectedStatuses.length > 0) {
                     processedData = processedData.filter(p => selectedStatuses.includes(p.estado));
                 }
-
                 if (currentSort.key) {
                     processedData.sort((a, b) => {
                         return currentSort.order === 'desc' ? b[currentSort.key] - a[currentSort.key] : a[currentSort.key] - b[currentSort.key];
@@ -581,7 +515,8 @@
                     case 'Lenta Rotación': return 'bg-yellow-100 text-yellow-800';
                     case 'Inventario Estancado': return 'bg-gray-200 text-gray-800';
                     case 'Alta Rotación': return 'bg-blue-100 text-blue-800';
-                    default: return 'bg-green-100 text-green-800';
+                    case 'Rotación Saludable': return 'bg-green-100 text-green-800';
+                    default: return 'bg-gray-100 text-gray-800';
                 }
             };
 
@@ -589,25 +524,12 @@
                 targetBody.innerHTML = '';
                 if (!products || products.length === 0) {
                     let message = 'No hay datos para los filtros seleccionados.';
-                    if (targetBody.id === 'kpi-modal-table-body') {
-                        message = 'No se encontraron productos con este estado.';
-                    }
+                    if (targetBody.id === 'kpi-modal-table-body') message = 'No se encontraron productos con este estado.';
                     targetBody.innerHTML = `<tr><td colspan="4" class="text-center py-8 text-gray-500">${message}</td></tr>`;
                 } else {
                     products.forEach(p => {
                         const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td class="px-6 py-4 text-sm font-medium text-gray-900" data-label="Producto">
-                                <span class="block truncate" title="${p.nombre_del_producto}">${p.nombre_del_producto}</span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" data-label="Stock Actual">${p.stock_actual}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" data-label="Ventas (30d)">${p.unidades_vendidas_30d}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium" data-label="Estado">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(p.estado)}">
-                                    ${p.estado}
-                                </span>
-                            </td>
-                        `;
+                        row.innerHTML = `<td class="px-6 py-4 text-sm font-medium text-gray-900" data-label="Producto"><span class="block truncate" title="${p.nombre_del_producto}">${p.nombre_del_producto}</span></td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" data-label="Stock Actual">${p.stock_actual}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" data-label="Ventas (30d)">${p.unidades_vendidas_30d}</td><td class="px-6 py-4 whitespace-nowrap text-sm font-medium" data-label="Estado"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(p.estado)}">${p.estado}</span></td>`;
                         targetBody.appendChild(row);
                     });
                 }
@@ -619,13 +541,14 @@
                     const response = await fetch('/api/reports/inventory_health');
                     if (!response.ok) throw new Error('Error al cargar el informe de salud');
                     const data = await response.json();
-
                     kpiRisk.textContent = data.kpis.risk_products_count;
                     kpiStagnant.textContent = data.kpis.stagnant_products_count;
                     kpiHealthy.textContent = `${data.kpis.healthy_percentage.toFixed(1)}%`;
 
-                    updateInventoryStatusChart(data.distribution);
+                    // CORRECCIÓN: Almacenar la lista completa de datos de inventario
+                    allInventoryData = data.inventory_data || [];
 
+                    updateInventoryStatusChart(data.distribution);
                 } catch (error) {
                     console.error("Error en fetchInventoryHealthReport:", error);
                 }
@@ -633,20 +556,13 @@
 
             const updateInventoryStatusChart = (distributionData) => {
                 const ctx = document.getElementById('inventoryStatusChart').getContext('2d');
+                if (!ctx) return;
                 const labels = Object.keys(distributionData);
                 const data = Object.values(distributionData);
-
                 const backgroundColors = labels.map(label => {
                     const colorClass = getStatusColor(label);
-                    if (colorClass.includes('red-100')) return '#FECACA';
-                    if (colorClass.includes('red-200')) return '#F87171';
-                    if (colorClass.includes('yellow-100')) return '#FBBF24';
-                    if (colorClass.includes('gray-200')) return '#D1D5DB';
-                    if (colorClass.includes('green-100')) return '#34D399';
-                    if (colorClass.includes('blue-100')) return '#BFDBFE';
-                    return '#9CA3AF';
+                    if (colorClass.includes('red-100')) return '#FECACA'; if (colorClass.includes('red-200')) return '#F87171'; if (colorClass.includes('yellow-100')) return '#FBBF24'; if (colorClass.includes('gray-200')) return '#D1D5DB'; if (colorClass.includes('green-100')) return '#34D399'; if (colorClass.includes('blue-100')) return '#BFDBFE'; return '#9CA3AF';
                 });
-
                 if (inventoryStatusChart) {
                     inventoryStatusChart.data.labels = labels;
                     inventoryStatusChart.data.datasets[0].data = data;
@@ -655,118 +571,113 @@
                 } else {
                     inventoryStatusChart = new Chart(ctx, {
                         type: 'doughnut',
-                        data: {
-                            labels: labels,
-                            datasets: [{
-                                label: 'Nº de Productos',
-                                data: data,
-                                backgroundColor: backgroundColors,
-                                borderWidth: 1,
-                                borderColor: '#fff'
-                            }]
-                        },
+                        data: { labels: labels, datasets: [{ label: 'Nº de Productos', data: data, backgroundColor: backgroundColors, borderWidth: 1, borderColor: '#fff' }] },
                         options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: { position: 'right' },
-                                datalabels: {
-                                    formatter: (value, ctx) => {
-                                        let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
-                                        let percentage = (value * 100 / sum).toFixed(1) + '%';
-                                        return percentage;
-                                    },
-                                    color: '#374151',
-                                    font: { weight: 'bold' }
-                                }
-                            }
+                            responsive: true, maintainAspectRatio: false,
+                            plugins: { legend: { position: 'right' }, datalabels: { formatter: (value, ctx) => { let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0); let percentage = (value * 100 / sum).toFixed(1) + '%'; return percentage; }, color: '#374151', font: { weight: 'bold' } } }
                         },
                         plugins: [ChartDataLabels]
                     });
                 }
             };
 
-            // --- LÓGICA PARA GRÁFICO DE TENDENCIA ---
-            const generateMockTrendData = (days) => {
-                const data = [];
-                let currentValue = 50 + Math.random() * 50;
-                for (let i = days - 1; i >= 0; i--) {
-                    const date = new Date();
-                    date.setDate(date.getDate() - i);
-                    data.push({
-                        fecha: date.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' }),
-                        unidades: Math.round(currentValue)
-                    });
-                    currentValue += (Math.random() - 0.45) * 10;
-                    if (currentValue < 10) currentValue = 10;
+            // --- Lógica para Gráfico de Tendencia de Ventas ---
+            const initializeDatePickersAndFetchTrend = async () => {
+                if (salesTrendStartDate.value && salesTrendEndDate.value) return;
+                salesTrendLoader.show();
+                try {
+                    const response = await fetch('/api/reports/sales_date_range');
+                    if (!response.ok) throw new Error('No se pudo obtener el rango de fechas');
+                    const data = await response.json();
+                    salesTrendStartDate.min = data.min_date;
+                    salesTrendStartDate.max = data.max_date;
+                    salesTrendEndDate.min = data.min_date;
+                    salesTrendEndDate.max = data.max_date;
+                    salesTrendEndDate.value = data.max_date;
+                    const defaultStartDate = new Date(data.max_date);
+                    defaultStartDate.setDate(defaultStartDate.getDate() - 29);
+                    salesTrendStartDate.value = defaultStartDate.toISOString().split('T')[0];
+                    await fetchSalesTrendData();
+                } catch (error) {
+                    console.error('Error inicializando fechas:', error);
+                    salesTrendTitle.textContent = "Error al cargar rango de fechas";
+                    salesTrendLoader.hide();
                 }
-                return data;
             };
 
             const fetchSalesTrendData = async () => {
-                const periodSelect = document.getElementById('sales-trend-period');
-                const period = periodSelect.value;
-                let days = 30;
-                if (period === '90d') days = 90;
-                else if (period === '180d') days = 180;
-                else if (period === '365d') days = 365;
-
-                const data = generateMockTrendData(days);
-                updateSalesTrendChart(data);
+                const startDate = salesTrendStartDate.value;
+                const endDate = salesTrendEndDate.value;
+                if (!startDate || !endDate || new Date(startDate) > new Date(endDate)) {
+                    salesTrendTitle.textContent = "Por favor, seleccione un rango de fechas válido.";
+                    updateSalesTrendChart([], null, null);
+                    return;
+                }
+                salesTrendLoader.show();
+                try {
+                    const url = `/api/reports/sales_trend?start_date=${startDate}&end_date=${endDate}`;
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error('La respuesta de la API no fue exitosa');
+                    const data = await response.json();
+                    updateSalesTrendChart(data, startDate, endDate);
+                } catch (error) {
+                    console.error('Error en fetchSalesTrendData:', error);
+                    salesTrendTitle.textContent = "Error al cargar los datos de tendencia.";
+                    updateSalesTrendChart([], startDate, endDate);
+                } finally {
+                    salesTrendLoader.hide();
+                }
             };
 
             const initializeSalesTrendChart = () => {
                 const ctx = document.getElementById('salesTrendChart').getContext('2d');
                 salesTrendChart = new Chart(ctx, {
                     type: 'line',
-                    data: {
-                        labels: [],
-                        datasets: [{
-                            label: 'Unidades Vendidas',
-                            data: [],
-                            borderColor: 'var(--brand-primary)',
-                            backgroundColor: 'rgba(0, 184, 212, 0.1)',
-                            fill: true,
-                            tension: 0.3,
-                            pointBackgroundColor: 'var(--brand-primary)',
-                            pointRadius: 2,
-                            pointHoverRadius: 5
-                        }]
-                    },
+                    data: { datasets: [{ label: 'Unidades Vendidas', data: [], borderColor: 'var(--brand-primary)', backgroundColor: 'rgba(0, 184, 212, 0.1)', fill: true, tension: 0.3, pointBackgroundColor: 'var(--brand-primary)', pointRadius: 2, pointHoverRadius: 5 }] },
                     options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: { y: { beginAtZero: true } },
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: { mode: 'index', intersect: false, callbacks: { label: (context) => `${context.raw} unidades` } }
-                        },
+                        responsive: true, maintainAspectRatio: false,
+                        scales: {  x: { type: 'time', time: { unit: 'day', tooltipFormat: 'dd MMM yyyy', displayFormats: { day: 'dd MMM' } }, ticks: { source: 'auto' } }, y: { beginAtZero: true } },
+                        plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false, callbacks: { label: (context) => `${context.raw.y} unidades` } } },
                         interaction: { mode: 'index', intersect: false }
                     }
                 });
             };
 
-            const updateSalesTrendChart = (trendData) => {
+            const formatDateForTitle = (dateString) => {
+                const date = new Date(dateString);
+                const userTimezoneOffset = date.getTimezoneOffset() * 60000;
+                const correctedDate = new Date(date.getTime() + userTimezoneOffset);
+                return correctedDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+            };
+
+            const updateSalesTrendChart = (trendData, startDate, endDate) => {
                 if (!salesTrendChart) return;
-                const labels = trendData.map(d => d.fecha);
-                const data = trendData.map(d => d.unidades);
-                salesTrendChart.data.labels = labels;
-                salesTrendChart.data.datasets[0].data = data;
+                if (startDate && endDate) {
+                     if (trendData && trendData.length > 0 && trendData.some(d => d.unidades > 0)) {
+                        salesTrendTitle.textContent = `Ventas del ${formatDateForTitle(startDate)} al ${formatDateForTitle(endDate)}`;
+                    } else {
+                        salesTrendTitle.textContent = `No hay datos de ventas entre ${formatDateForTitle(startDate)} y ${formatDateForTitle(endDate)}`;
+                    }
+                } else {
+                    salesTrendTitle.textContent = "Seleccione un rango de fechas";
+                }
+                const dataPoints = trendData ? trendData.map(d => ({x: d.fecha, y: d.unidades})) : [];
+                salesTrendChart.data.datasets[0].data = dataPoints;
                 salesTrendChart.update();
             };
 
             // --- Lógica de Modales ---
-            const showKpiDetailsModal = async (status) => {
+            const showKpiDetailsModal = (status) => {
+                // CORRECCIÓN: Se elimina la llamada asíncrona y la carga redundante.
+                // Los datos ya deberían estar en `allInventoryData`.
                 if (allInventoryData.length === 0) {
-                    console.log("Datos de inventario no encontrados, iniciando carga silenciosa...");
-                    try {
-                        await fetchInventoryData(true);
-                        console.log("Carga silenciosa completada. Mostrando modal.");
-                    } catch (error) {
-                        console.error("Falló la carga silenciosa de datos. No se puede mostrar el modal.", error);
-                        return;
-                    }
+                    console.error("Los datos de inventario no están disponibles para mostrar el detalle.");
+                    kpiModalTitle.textContent = `Error: Datos no cargados`;
+                    renderInventoryTable(kpiModalTableBody, []);
+                    kpiDetailsModalOverlay.classList.add('visible');
+                    return;
                 }
+
                 kpiModalTitle.textContent = `Detalle: ${status}`;
                 const filteredProducts = allInventoryData.filter(p => p.estado === status);
                 renderInventoryTable(kpiModalTableBody, filteredProducts);
@@ -780,46 +691,39 @@
 
                 try {
                     const response = await fetch('/api/categories');
+                    if (!response.ok) throw new Error('Error al cargar categorías');
                     const categories = await response.json();
-                    categories.forEach(cat => {
-                        if (cat) {
-                            const option1 = document.createElement('option');
-                            option1.value = cat; option1.textContent = cat;
-                            categoryFilterSales.appendChild(option1);
-
-                            const option2 = document.createElement('option');
-                            option2.value = cat; option2.textContent = cat;
-                            categoryFilterInventory.appendChild(option2);
+                    const categoryFilters = [categoryFilterSales, categoryFilterInventory];
+                    categoryFilters.forEach(filter => {
+                        while (filter.options.length > 1) {
+                            filter.remove(1);
                         }
+                        categories.forEach(cat => {
+                            if (cat) {
+                                const option = document.createElement('option');
+                                option.value = cat;
+                                option.textContent = cat;
+                                filter.appendChild(option);
+                            }
+                        });
                     });
+                    await fetchSalesData();
                 } catch (error) {
-                    console.error("Error al cargar categorías", error);
+                    console.error("Error en la inicialización de categorías:", error);
+                    await fetchSalesData();
                 }
-
-                await fetchSalesData();
 
                 // --- Event Listeners ---
                 categoryFilterSales.addEventListener('change', fetchSalesData);
                 topNFilter.addEventListener('change', fetchSalesData);
-
-                categoryFilterInventory.addEventListener('change', () => {
-                    fetchInventoryData();
-                });
-
-                document.getElementById('sales-trend-period').addEventListener('change', fetchSalesTrendData);
-
+                categoryFilterInventory.addEventListener('change', () => { fetchInventoryData(); });
                 statusFilterButton.addEventListener('click', () => statusFilterOptions.classList.toggle('hidden'));
-                document.addEventListener('click', (e) => {
-                    if (!statusFilterContainer.contains(e.target)) {
-                        statusFilterOptions.classList.add('hidden');
-                    }
-                });
-
+                document.addEventListener('click', (e) => { if (!statusFilterContainer.contains(e.target)) { statusFilterOptions.classList.add('hidden'); } });
                 inventoryTableHeaders.forEach(header => {
                     header.addEventListener('click', () => {
                         const sortKey = header.dataset.sort;
                         if (currentSort.key === sortKey) {
-                            currentSort.order = currentSort.order === 'desc' ? 'asc' : 'desc';
+                            currentSort.order = currentSort.order === 'asc' ? 'desc' : 'desc';
                         } else {
                             currentSort.key = sortKey;
                             currentSort.order = 'desc';
@@ -829,19 +733,18 @@
                         applyInventoryFiltersAndSort();
                     });
                 });
-
                 infoModalTrigger.addEventListener('click', () => infoModalOverlay.classList.add('visible'));
                 infoModalClose.addEventListener('click', () => infoModalOverlay.classList.remove('visible'));
-
                 riskKpiTrigger.addEventListener('click', () => showKpiDetailsModal('Riesgo de Quiebre'));
                 stagnantKpiTrigger.addEventListener('click', () => showKpiDetailsModal('Inventario Estancado'));
                 kpiDetailsModalClose.addEventListener('click', () => kpiDetailsModalOverlay.classList.remove('visible'));
+                salesTrendStartDate.addEventListener('change', fetchSalesTrendData);
+                salesTrendEndDate.addEventListener('change', fetchSalesTrendData);
 
                 const closeModal = () => {
                     infoModalOverlay.classList.remove('visible');
                     kpiDetailsModalOverlay.classList.remove('visible');
                 }
-
                 document.addEventListener('keydown', (e) => { if (e.key === "Escape") closeModal(); });
                 infoModalOverlay.addEventListener('click', (e) => { if (e.target === infoModalOverlay) closeModal(); });
                 kpiDetailsModalOverlay.addEventListener('click', (e) => { if (e.target === kpiDetailsModalOverlay) closeModal(); });

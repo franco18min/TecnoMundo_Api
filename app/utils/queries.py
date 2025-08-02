@@ -3,14 +3,25 @@ from typing import Tuple, List, Any
 
 def get_sales_query(category: str = None) -> Tuple[str, List[Any]]:
     """
-    Construye la consulta SQL para ventas, usando '?' como marcador de posición
-    para compatibilidad con el conector de Databricks.
+    Construye la consulta SQL para ventas, uniendo con la tabla de productos
+    para poder filtrar por categoría y obtener el nombre del producto.
     """
-    base_query = "SELECT * FROM workspace.tecnomundo_data_gold.fact_sales"
+    # CORRECCIÓN: Se añade LEFT JOIN para obtener la categoría y el nombre del producto.
+    base_query = """
+    SELECT
+        s.codigo_producto,
+        p.nombre_del_producto,
+        p.categoria,
+        s.cantidad,
+        s.precio_unitario,
+        s.fecha
+    FROM workspace.tecnomundo_data_gold.fact_sales s
+    LEFT JOIN workspace.tecnomundo_data_gold.dim_products p ON s.codigo_producto = p.codigo_producto
+    """
     params = []
+    # CORRECCIÓN: Se añade una cláusula WHERE para el filtrado.
     if category:
-        # CAMBIO: Usamos '?' en lugar de '%s'
-        base_query += " WHERE categoria = ?"
+        base_query += " WHERE p.categoria = ?"
         params.append(category)
     return base_query, params
 
@@ -38,12 +49,13 @@ def get_inventory_query(category: str = None) -> Tuple[str, List[Any]]:
     ),
     LatestStock AS (
         SELECT
-            codigo_producto,
-            nombre_del_producto,
-            categoria,
-            stock_actual,
-            ROW_NUMBER() OVER(PARTITION BY codigo_producto ORDER BY fecha DESC) as rn
-        FROM workspace.tecnomundo_data_gold.fact_sales
+            s.codigo_producto,
+            p.nombre_del_producto,
+            p.categoria,
+            s.stock_actual,
+            ROW_NUMBER() OVER(PARTITION BY s.codigo_producto ORDER BY s.fecha DESC) as rn
+        FROM workspace.tecnomundo_data_gold.fact_sales s
+        JOIN workspace.tecnomundo_data_gold.dim_products p ON s.codigo_producto = p.codigo_producto
     ),
     SalesLast30Days AS (
         SELECT
@@ -66,8 +78,31 @@ def get_inventory_query(category: str = None) -> Tuple[str, List[Any]]:
     """
 
     if category:
-        # CAMBIO: Usamos '?' en lugar de '%s'
         query += " AND ls.categoria = ?"
         params.append(category)
 
+    return query, params
+
+
+def get_sales_date_range_query() -> str:
+    """
+    Obtiene la fecha mínima y máxima de todas las ventas.
+    """
+    return "SELECT MIN(CAST(fecha AS DATE)) as min_date, MAX(CAST(fecha AS DATE)) as max_date FROM workspace.tecnomundo_data_gold.fact_sales"
+
+
+def get_sales_trend_query(start_date: str, end_date: str) -> Tuple[str, List[Any]]:
+    """
+    Obtiene la tendencia de ventas agregada por día para un rango de fechas.
+    """
+    query = """
+    SELECT
+        CAST(fecha AS DATE) as fecha_venta,
+        SUM(cantidad) as total_unidades
+    FROM workspace.tecnomundo_data_gold.fact_sales
+    WHERE CAST(fecha AS DATE) BETWEEN ? AND ?
+    GROUP BY CAST(fecha AS DATE)
+    ORDER BY fecha_venta ASC
+    """
+    params = [start_date, end_date]
     return query, params
