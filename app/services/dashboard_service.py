@@ -15,11 +15,10 @@ class DashboardService:
     def get_sales_analysis_data(self, category: str = None, top_n: int = 10):
         """
         Obtiene los datos para el análisis de ventas.
-        NUEVA LÓGICA: Obtiene ventas y productos por separado y los une en pandas
+        LÓGICA: Obtiene ventas y productos por separado y los une en pandas
         para mayor robustez contra errores de JOIN en la base de datos.
         """
         try:
-            # 1. Obtener todos los datos de ventas y productos por separado.
             logger.info("Obteniendo datos de ventas y productos por separado...")
             sales_query = "SELECT codigo_producto, cantidad FROM workspace.tecnomundo_data_gold.fact_sales"
             products_query = "SELECT codigo_producto, nombre_del_producto, categoria FROM workspace.tecnomundo_data_gold.dim_products"
@@ -31,22 +30,16 @@ class DashboardService:
                 logger.warning("Una de las tablas (ventas o productos) está vacía.")
                 return {"top_products_by_quantity": []}
 
-            # 2. Asegurar que las claves de unión tengan el mismo tipo de dato.
             df_sales['codigo_producto'] = df_sales['codigo_producto'].astype(str)
             df_products['codigo_producto'] = df_products['codigo_producto'].astype(str)
 
-            # 3. Unir (merge) los DataFrames en pandas.
             df_merged = pd.merge(df_sales, df_products, on='codigo_producto', how='left')
-            logger.info(f"Se unieron los datos. Total de filas: {len(df_merged)}")
 
-            # 4. Filtrar por categoría (si se proporcionó una).
             if category and category.lower() != 'all':
                 df_filtered = df_merged[df_merged['categoria'] == category].copy()
-                logger.info(f"Filtrado por categoría '{category}'. {len(df_filtered)} filas restantes.")
             else:
                 df_filtered = df_merged.copy()
 
-            # 5. Limpiar y procesar los datos para el gráfico.
             df_filtered.dropna(subset=['nombre_del_producto'], inplace=True)
             df_filtered['cantidad'] = pd.to_numeric(df_filtered['cantidad'], errors='coerce').fillna(0)
 
@@ -54,12 +47,10 @@ class DashboardService:
                 logger.warning("El DataFrame está vacío después de filtrar y limpiar.")
                 return {"top_products_by_quantity": []}
 
-            # 6. Agrupar, sumar y obtener los productos top.
             top_products = df_filtered.groupby(['codigo_producto', 'nombre_del_producto'])['cantidad'].sum().nlargest(
                 top_n).reset_index()
             top_products.rename(columns={'cantidad': 'total_unidades'}, inplace=True)
 
-            logger.info(f"Análisis completado. Se encontraron {len(top_products)} productos top.")
             return {"top_products_by_quantity": top_products.to_dict(orient='records')}
 
         except Exception as e:
@@ -108,7 +99,8 @@ class DashboardService:
 
             df['estado'] = df.apply(assign_status_doi, axis=1)
 
-            df_final = df[['nombre_del_producto', 'stock_actual', 'unidades_vendidas_30d', 'estado']].copy()
+            df_final = df[
+                ['nombre_del_producto', 'stock_actual', 'unidades_vendidas_30d', 'estado', 'categoria']].copy()
             return df_final.to_dict(orient='records')
 
         except Exception as e:
@@ -117,14 +109,13 @@ class DashboardService:
 
     def get_inventory_health_report_data(self):
         try:
-            # Esta función ya calcula todos los datos de inventario que necesitamos.
             inventory_list = self.get_inventory_analysis_data()
 
             if not inventory_list:
                 return {
                     "kpis": {"risk_products_count": 0, "stagnant_products_count": 0, "healthy_percentage": 0},
                     "distribution": {},
-                    "inventory_data": []  # Devolver lista vacía
+                    "inventory_data": []
                 }
 
             df = pd.DataFrame(inventory_list)
@@ -136,9 +127,6 @@ class DashboardService:
             healthy_percentage = (healthy_products_count / total_products) * 100 if total_products > 0 else 0
             distribution = df['estado'].value_counts().to_dict()
 
-            # --- CORRECCIÓN DEL BUG ---
-            # Se añade la lista completa de productos del inventario a la respuesta de la API.
-            # Así, el frontend tiene todos los datos con una sola llamada.
             return {
                 "kpis": {
                     "risk_products_count": int(risk_products_count),

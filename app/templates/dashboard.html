@@ -7,6 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <!-- Locale en español para date-fns -->
+    <script src="https://cdn.jsdelivr.net/npm/date-fns/locale/es/index.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <style>
         body { font-family: 'Inter', sans-serif; }
@@ -382,7 +384,6 @@
                 document.getElementById(`${targetSection}-section`).classList.add('active');
                 document.getElementById(`${targetSection}-link`).classList.add('active');
 
-                // Lógica de carga específica de la sección
                 if (targetSection === 'inventory-intelligence') {
                     if (allInventoryData.length === 0) fetchInventoryData();
                 } else if (targetSection === 'reports') {
@@ -545,7 +546,6 @@
                     kpiStagnant.textContent = data.kpis.stagnant_products_count;
                     kpiHealthy.textContent = `${data.kpis.healthy_percentage.toFixed(1)}%`;
 
-                    // CORRECCIÓN: Almacenar la lista completa de datos de inventario
                     allInventoryData = data.inventory_data || [];
 
                     updateInventoryStatusChart(data.distribution);
@@ -582,6 +582,33 @@
             };
 
             // --- Lógica para Gráfico de Tendencia de Ventas ---
+            const sundayLinePlugin = {
+                id: 'sundayLine',
+                afterDraw: (chart) => {
+                    const { ctx, chartArea: { top, bottom, left, right }, scales: { x } } = chart;
+                    if (!x.ticks || x.ticks.length === 0) return;
+
+                    x.ticks.forEach((tick, index) => {
+                        const date = new Date(tick.value);
+                        if (date.getUTCDay() === 0) { // 0 es Domingo
+                            const xPos = x.getPixelForTick(index);
+                            if (xPos >= left && xPos <= right) {
+                                ctx.save();
+                                ctx.beginPath();
+                                ctx.moveTo(xPos, top);
+                                ctx.lineTo(xPos, bottom);
+                                // MODIFICACIÓN: Línea más visible
+                                ctx.lineWidth = 1;
+                                ctx.strokeStyle = 'rgba(239, 68, 68, 0.25)'; // Rojo claro y semi-transparente
+                                ctx.setLineDash([]); // Línea sólida
+                                ctx.stroke();
+                                ctx.restore();
+                            }
+                        }
+                    });
+                }
+            };
+
             const initializeDatePickersAndFetchTrend = async () => {
                 if (salesTrendStartDate.value && salesTrendEndDate.value) return;
                 salesTrendLoader.show();
@@ -595,7 +622,7 @@
                     salesTrendEndDate.max = data.max_date;
                     salesTrendEndDate.value = data.max_date;
                     const defaultStartDate = new Date(data.max_date);
-                    defaultStartDate.setDate(defaultStartDate.getDate() - 29);
+                    defaultStartDate.setUTCDate(defaultStartDate.getUTCDate() - 29);
                     salesTrendStartDate.value = defaultStartDate.toISOString().split('T')[0];
                     await fetchSalesTrendData();
                 } catch (error) {
@@ -636,10 +663,46 @@
                     data: { datasets: [{ label: 'Unidades Vendidas', data: [], borderColor: 'var(--brand-primary)', backgroundColor: 'rgba(0, 184, 212, 0.1)', fill: true, tension: 0.3, pointBackgroundColor: 'var(--brand-primary)', pointRadius: 2, pointHoverRadius: 5 }] },
                     options: {
                         responsive: true, maintainAspectRatio: false,
-                        scales: {  x: { type: 'time', time: { unit: 'day', tooltipFormat: 'dd MMM yyyy', displayFormats: { day: 'dd MMM' } }, ticks: { source: 'auto' } }, y: { beginAtZero: true } },
-                        plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false, callbacks: { label: (context) => `${context.raw.y} unidades` } } },
+                        scales: {
+                            x: {
+                                type: 'time',
+                                adapters: {
+                                    date: {
+                                        locale: window.dateFns?.locale?.es,
+                                    }
+                                },
+                                time: {
+                                    unit: 'day',
+                                    tooltipFormat: 'PPPP',
+                                    displayFormats: { day: 'dd MMM' }
+                                },
+                                ticks: { source: 'auto' }
+                            },
+                            y: { beginAtZero: true }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false,
+                                callbacks: {
+                                    title: function(tooltipItems) {
+                                        if (!tooltipItems.length) return '';
+                                        const date = new Date(tooltipItems[0].parsed.x);
+                                        return date.toLocaleDateString('es-ES', {
+                                            weekday: 'long',
+                                            year: 'numeric',
+                                            month: 'long',
+                                            day: 'numeric'
+                                        });
+                                    },
+                                    label: (context) => `${context.raw.y} unidades`
+                                }
+                            }
+                        },
                         interaction: { mode: 'index', intersect: false }
-                    }
+                    },
+                    plugins: [sundayLinePlugin]
                 });
             };
 
@@ -668,8 +731,6 @@
 
             // --- Lógica de Modales ---
             const showKpiDetailsModal = (status) => {
-                // CORRECCIÓN: Se elimina la llamada asíncrona y la carga redundante.
-                // Los datos ya deberían estar en `allInventoryData`.
                 if (allInventoryData.length === 0) {
                     console.error("Los datos de inventario no están disponibles para mostrar el detalle.");
                     kpiModalTitle.textContent = `Error: Datos no cargados`;

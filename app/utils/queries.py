@@ -6,7 +6,6 @@ def get_sales_query(category: str = None) -> Tuple[str, List[Any]]:
     Construye la consulta SQL para ventas, uniendo con la tabla de productos
     para poder filtrar por categoría y obtener el nombre del producto.
     """
-    # CORRECCIÓN: Se añade LEFT JOIN para obtener la categoría y el nombre del producto.
     base_query = """
     SELECT
         s.codigo_producto,
@@ -19,10 +18,13 @@ def get_sales_query(category: str = None) -> Tuple[str, List[Any]]:
     LEFT JOIN workspace.tecnomundo_data_gold.dim_products p ON s.codigo_producto = p.codigo_producto
     """
     params = []
-    # CORRECCIÓN: Se añade una cláusula WHERE para el filtrado.
-    if category:
-        base_query += " WHERE p.categoria = ?"
+    # Se añade un WHERE para filtrar por categoría si es necesario, y siempre se excluye 'Servicio Tecnico' de este análisis.
+    if category and category.lower() != 'all':
+        base_query += " WHERE p.categoria = ? AND p.categoria != 'Servicio Tecnico'"
         params.append(category)
+    else:
+        base_query += " WHERE p.categoria != 'Servicio Tecnico' OR p.categoria IS NULL"
+
     return base_query, params
 
 
@@ -30,7 +32,7 @@ def get_categories_query() -> str:
     """
     Construye la consulta SQL para obtener la lista de categorías únicas.
     """
-    return "SELECT DISTINCT categoria FROM workspace.tecnomundo_data_gold.dim_products WHERE categoria IS NOT NULL ORDER BY categoria"
+    return "SELECT DISTINCT categoria FROM workspace.tecnomundo_data_gold.dim_products WHERE categoria IS NOT NULL AND categoria != 'Servicio Tecnico' ORDER BY categoria"
 
 
 def get_inventory_query(category: str = None) -> Tuple[str, List[Any]]:
@@ -74,7 +76,7 @@ def get_inventory_query(category: str = None) -> Tuple[str, List[Any]]:
         COALESCE(s30.unidades_vendidas_30d, 0) as unidades_vendidas_30d
     FROM LatestStock ls
     LEFT JOIN SalesLast30Days s30 ON ls.codigo_producto = s30.codigo_producto
-    WHERE ls.rn = 1
+    WHERE ls.rn = 1 AND ls.categoria != 'Servicio Tecnico'
     """
 
     if category:
@@ -86,22 +88,33 @@ def get_inventory_query(category: str = None) -> Tuple[str, List[Any]]:
 
 def get_sales_date_range_query() -> str:
     """
-    Obtiene la fecha mínima y máxima de todas las ventas.
+    Obtiene la fecha mínima y máxima de todas las ventas de productos,
+    excluyendo la categoría 'Servicio Tecnico'.
     """
-    return "SELECT MIN(CAST(fecha AS DATE)) as min_date, MAX(CAST(fecha AS DATE)) as max_date FROM workspace.tecnomundo_data_gold.fact_sales"
+    return """
+    SELECT
+        MIN(CAST(s.fecha AS DATE)) as min_date,
+        MAX(CAST(s.fecha AS DATE)) as max_date
+    FROM workspace.tecnomundo_data_gold.fact_sales s
+    LEFT JOIN workspace.tecnomundo_data_gold.dim_products p ON s.codigo_producto = p.codigo_producto
+    WHERE p.categoria != 'Servicio Tecnico' OR p.categoria IS NULL
+    """
 
 
 def get_sales_trend_query(start_date: str, end_date: str) -> Tuple[str, List[Any]]:
     """
-    Obtiene la tendencia de ventas agregada por día para un rango de fechas.
+    Obtiene la tendencia de ventas agregada por día para un rango de fechas,
+    excluyendo la categoría 'Servicio Tecnico'.
     """
     query = """
     SELECT
-        CAST(fecha AS DATE) as fecha_venta,
-        SUM(cantidad) as total_unidades
-    FROM workspace.tecnomundo_data_gold.fact_sales
-    WHERE CAST(fecha AS DATE) BETWEEN ? AND ?
-    GROUP BY CAST(fecha AS DATE)
+        CAST(s.fecha AS DATE) as fecha_venta,
+        SUM(s.cantidad) as total_unidades
+    FROM workspace.tecnomundo_data_gold.fact_sales s
+    LEFT JOIN workspace.tecnomundo_data_gold.dim_products p ON s.codigo_producto = p.codigo_producto
+    WHERE (CAST(s.fecha AS DATE) BETWEEN ? AND ?)
+    AND (p.categoria != 'Servicio Tecnico' OR p.categoria IS NULL)
+    GROUP BY CAST(s.fecha AS DATE)
     ORDER BY fecha_venta ASC
     """
     params = [start_date, end_date]
