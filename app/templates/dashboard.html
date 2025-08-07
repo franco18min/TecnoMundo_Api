@@ -73,6 +73,10 @@
                     <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                     Informes
                 </a>
+                <a href="#" id="actions-link" class="sidebar-link flex items-center px-4 py-2 rounded-lg" data-section="actions">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    Acciones
+                </a>
             </nav>
         </aside>
 
@@ -114,7 +118,7 @@
                     </div>
 
                     <div id="inventory-intelligence-section" class="dashboard-section">
-                        <header class="mb-8 p-6 rounded-xl shadow-lg text-white" style="background: linear-gradient(90deg, var(--brand-dark) 0%, var(--brand-primary) 100%);">
+                        <header class="mb-8 p-6 rounded-xl shadow-lg text-white" style="background: linear-gradient(90deg, var(--brand-primary) 0%, var(--brand-dark) 100%);">
                             <h1 class="text-4xl font-extrabold tracking-tight">Inteligencia de Inventario</h1>
                         </header>
                         <div class="relative">
@@ -168,8 +172,8 @@
                     </div>
 
                     <div id="reports-section" class="dashboard-section">
-                        <header class="mb-8 p-6 rounded-xl shadow-lg text-white" style="background: linear-gradient(90deg, #005f6b 0%, #00b8d4 100%);">
-                            <h1 class="text-4xl font-extrabold tracking-tight">Informe de Salud de Inventario</h1>
+                        <header class="mb-8 p-6 rounded-xl shadow-lg text-white" style="background: linear-gradient(90deg, var(--brand-primary) 0%, var(--brand-dark) 100%);">
+                            <h1 class="text-4xl font-extrabold tracking-tight">Informe General del Negocio</h1>
                         </header>
 
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -203,7 +207,12 @@
                         </div>
 
                         <div class="bg-white rounded-lg shadow p-6">
-                             <h3 class="text-xl font-semibold mb-4">Distribución de Estados de Inventario</h3>
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-xl font-semibold">Distribución de Estados de Inventario</h3>
+                                <button id="diagnosis-trigger-btn" class="px-4 py-2 text-sm font-semibold text-white rounded-lg shadow-md transition-colors duration-200" style="background-color: var(--brand-dark);" hover:bg-opacity-90>
+                                    Generar Diagnóstico
+                                </button>
+                            </div>
                              <div class="h-96 w-full max-w-lg mx-auto">
                                  <canvas id="inventoryStatusChart"></canvas>
                              </div>
@@ -232,7 +241,29 @@
                                 <canvas id="salesTrendChart"></canvas>
                             </div>
                         </div>
+
+                        <div class="bg-white rounded-lg shadow p-8 mt-8 text-center">
+                            <h3 class="text-2xl font-semibold text-gray-400">Próximamente...</h3>
+                            <p class="text-gray-500 mt-2">Nuevos gráficos y análisis para potenciar aún más tus decisiones.</p>
+                        </div>
                     </div>
+
+                    <div id="actions-section" class="dashboard-section">
+                        <header class="mb-8 p-6 rounded-xl shadow-lg text-white" style="background: linear-gradient(90deg, var(--brand-primary) 0%, var(--brand-dark) 100%);">
+                            <h1 class="text-4xl font-extrabold tracking-tight">Acciones y Exportación de Datos</h1>
+                        </header>
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <h3 class="text-xl font-semibold mb-4">Exportar lista de inventario</h3>
+                            <div class="space-y-4">
+                                <button id="export-critical-inventory-btn" class="w-full md:w-auto flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-lg shadow-md transition-colors duration-200" style="background-color: var(--brand-dark);">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                    Exportar Informe (PDF)
+                                </button>
+                                <!-- Aquí se pueden agregar más botones de exportación en el futuro -->
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </main>
@@ -243,7 +274,7 @@
              <button id="info-modal-close" class="absolute top-4 right-4 text-white hover:text-gray-200 transition z-10">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
-            <header class="p-6 text-white" style="background: linear-gradient(90deg, var(--brand-dark) 0%, var(--brand-primary) 100%);">
+            <header class="p-6 text-white rounded-t-2xl" style="background: linear-gradient(90deg, var(--brand-primary) 0%, var(--brand-dark) 100%);">
                 <h2 class="text-2xl font-bold">Definición de Estados de Inventario</h2>
             </header>
             <div class="p-6 space-y-4 text-gray-600 max-h-[70vh] overflow-y-auto">
@@ -279,11 +310,11 @@
     </div>
 
     <div id="kpi-details-modal-overlay" class="modal-overlay">
-        <div class="modal-content max-w-4xl w-11/12 mx-auto bg-white rounded-2xl shadow-2xl relative">
+        <div class="modal-content max-w-4xl w-11/12 mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden relative">
             <button id="kpi-details-modal-close" class="absolute top-4 right-4 text-white hover:text-gray-200 transition z-10">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
-            <header id="kpi-modal-header" class="p-6 text-white" style="background: linear-gradient(90deg, var(--brand-dark) 0%, var(--brand-primary) 100%);">
+            <header id="kpi-modal-header" class="p-6 text-white rounded-t-2xl" style="background: linear-gradient(90deg, var(--brand-primary) 0%, var(--brand-dark) 100%);">
                 <h2 id="kpi-modal-title" class="text-2xl font-bold">Detalle de Productos</h2>
             </header>
             <div class="p-6 max-h-[60vh] overflow-y-auto">
@@ -305,6 +336,20 @@
         </div>
     </div>
 
+    <div id="diagnosis-modal-overlay" class="modal-overlay">
+        <div class="modal-content max-w-4xl w-11/12 mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden relative">
+            <button id="diagnosis-modal-close" class="absolute top-4 right-4 text-white hover:text-gray-200 transition z-10">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <header class="p-6 text-white rounded-t-2xl" style="background: linear-gradient(90deg, var(--brand-primary) 0%, var(--brand-dark) 100%);">
+                <h2 class="text-2xl font-bold">Informe de Estado de Inventario y Plan de Acción</h2>
+            </header>
+            <div id="diagnosis-modal-body" class="p-6 md:p-8 space-y-6 text-gray-700 max-h-[70vh] overflow-y-auto">
+                <!-- El contenido se generará dinámicamente aquí -->
+            </div>
+        </div>
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             let allInventoryData = [];
@@ -313,6 +358,7 @@
             let inventoryStatusChart;
             let salesTrendChart;
             let topProductsChart;
+            let lastDistributionData = {};
 
             // --- Selectores de Elementos ---
             const salesChartLoader = document.getElementById('sales-chart-loader');
@@ -333,6 +379,7 @@
             const stagnantKpiTrigger = document.getElementById('stagnant-kpi-trigger');
             const salesLink = document.getElementById('sales-analysis-link');
             const inventoryLink = document.getElementById('inventory-intelligence-link');
+            const actionsLink = document.getElementById('actions-link');
             const categoryFilterSales = document.getElementById('category-filter-sales');
             const topNFilter = document.getElementById('top-n-filter');
             const chartCanvas = document.getElementById('topProductsChart');
@@ -347,6 +394,12 @@
             const salesTrendTitle = document.getElementById('sales-trend-title');
             const salesTrendStartDate = document.getElementById('sales-trend-start-date');
             const salesTrendEndDate = document.getElementById('sales-trend-end-date');
+
+            const diagnosisTriggerBtn = document.getElementById('diagnosis-trigger-btn');
+            const diagnosisModalOverlay = document.getElementById('diagnosis-modal-overlay');
+            const diagnosisModalClose = document.getElementById('diagnosis-modal-close');
+            const diagnosisModalBody = document.getElementById('diagnosis-modal-body');
+            const exportCriticalInventoryBtn = document.getElementById('export-critical-inventory-btn');
 
             // --- Gestor de Carga (Loader) ---
             const createLoaderManager = (loaderElement) => {
@@ -395,6 +448,7 @@
             salesLink.addEventListener('click', (e) => { e.preventDefault(); switchSection('sales-analysis'); });
             inventoryLink.addEventListener('click', (e) => { e.preventDefault(); switchSection('inventory-intelligence'); });
             reportsLink.addEventListener('click', (e) => { e.preventDefault(); switchSection('reports'); });
+            actionsLink.addEventListener('click', (e) => { e.preventDefault(); switchSection('actions'); });
 
             // --- Lógica de Análisis de Ventas ---
             const fetchSalesData = async () => {
@@ -547,6 +601,7 @@
                     kpiHealthy.textContent = `${data.kpis.healthy_percentage.toFixed(1)}%`;
 
                     allInventoryData = data.inventory_data || [];
+                    lastDistributionData = data.distribution || {};
 
                     updateInventoryStatusChart(data.distribution);
                 } catch (error) {
@@ -597,7 +652,6 @@
                                 ctx.beginPath();
                                 ctx.moveTo(xPos, top);
                                 ctx.lineTo(xPos, bottom);
-                                // MODIFICACIÓN: Línea más visible
                                 ctx.lineWidth = 1;
                                 ctx.strokeStyle = 'rgba(239, 68, 68, 0.25)'; // Rojo claro y semi-transparente
                                 ctx.setLineDash([]); // Línea sólida
@@ -678,7 +732,13 @@
                                 },
                                 ticks: { source: 'auto' }
                             },
-                            y: { beginAtZero: true }
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Total de Unidades Vendidas'
+                                }
+                            }
                         },
                         plugins: {
                             legend: { display: false },
@@ -745,6 +805,95 @@
                 kpiDetailsModalOverlay.classList.add('visible');
             };
 
+            // --- LÓGICA PARA EL MODAL DE DIAGNÓSTICO ---
+            const generateAndShowDiagnosis = () => {
+                if (Object.keys(lastDistributionData).length === 0) {
+                    diagnosisModalBody.innerHTML = `<p class="text-center text-gray-500">No hay datos de inventario para generar un diagnóstico.</p>`;
+                    diagnosisModalOverlay.classList.add('visible');
+                    return;
+                }
+
+                const total = Object.values(lastDistributionData).reduce((sum, count) => sum + count, 0);
+                const getPercent = (state) => {
+                    const count = lastDistributionData[state] || 0;
+                    return (count / total) * 100;
+                };
+
+                const healthyPct = getPercent('Rotación Saludable') + getPercent('Alta Rotación');
+                const immobilizedPct = getPercent('Lenta Rotación') + getPercent('Inventario Estancado');
+                const salesLossPct = getPercent('Sin Stock') + getPercent('Riesgo de Quiebre');
+
+                let status, summary, healthyText, immobilizedText, salesLossText, plan;
+
+                // Lógica de diagnóstico basada en parámetros
+                if (healthyPct < 40 || salesLossPct > 25) {
+                    status = `🚨 **Estado General: CRÍTICO**`;
+                    summary = `El análisis actual de nuestro inventario revela una situación **crítica** que requiere atención prioritaria. Actualmente, solo el **${healthyPct.toFixed(1)}%** de nuestro stock se considera "Saludable", una cifra muy por debajo del promedio realista del sector (45%-60%). Los problemas principales son una pérdida de oportunidades de venta del **${salesLossPct.toFixed(1)}%** y un capital inmovilizado del **${immobilizedPct.toFixed(1)}%**.`;
+                    healthyText = `Con solo un **${healthyPct.toFixed(1)}%**, el motor principal del negocio está funcionando a menos de la mitad de su capacidad potencial.`;
+                    immobilizedText = `El **${immobilizedPct.toFixed(1)}%** representa un riesgo financiero significativo por la posible obsolescencia de los productos.`;
+                    salesLossText = `Esta es la alerta más grave. Nuestro **${salesLossPct.toFixed(1)}%** es más del doble del promedio tolerable del sector (10-15%), lo que indica una pérdida masiva y constante de ingresos.`;
+                    plan = `Se requiere una intervención inmediata. La prioridad número uno es **reponer el stock agotado** para frenar la pérdida de ingresos. La segunda prioridad es **lanzar una campaña de liquidación agresiva** para convertir el inventario estancado en flujo de caja.`;
+                } else if (healthyPct <= 60 || salesLossPct > 15 || immobilizedPct > 40) {
+                    status = `⚠️ **Estado General: NECESITA ATENCIÓN**`;
+                    const mainProblem = salesLossPct > immobilizedPct ? `una alta tasa de pérdida de ventas del **${salesLossPct.toFixed(1)}%**` : `un elevado capital inmovilizado del **${immobilizedPct.toFixed(1)}%**`;
+                    summary = `El análisis actual de nuestro inventario revela una situación que **necesita atención**. Aunque el **${healthyPct.toFixed(1)}%** de nuestro stock se considera "Saludable", existen ineficiencias significativas. El problema principal a atender es ${mainProblem}.`;
+                    healthyText = `Nuestro **${healthyPct.toFixed(1)}%** se encuentra dentro del rango promedio del sector (45-60%), pero aún hay un amplio margen para mejorar la eficiencia.`;
+                    immobilizedText = `Con un **${immobilizedPct.toFixed(1)}%**, tenemos una cantidad considerable de capital que no está generando retorno, lo que limita nuestra agilidad para reinvertir.`;
+                    salesLossText = `El **${salesLossPct.toFixed(1)}%** indica que estamos perdiendo clientes por falta de disponibilidad. Es un área de mejora prioritaria.`;
+                    plan = `El enfoque debe ser **equilibrado**. Se recomienda iniciar acciones de liquidación para el stock más antiguo y, al mismo tiempo, ajustar los parámetros de compra de los productos con riesgo de quiebre para mejorar su disponibilidad.`;
+                } else if (healthyPct <= 80 && salesLossPct < 15) {
+                    status = `👍 **Estado General: SALUDABLE**`;
+                    summary = `El análisis actual de nuestro inventario revela un estado **saludable**. Con un **${healthyPct.toFixed(1)}%** de nuestro stock rotando eficientemente, la operación general del negocio es sólida. Existen áreas de optimización para reducir nuestro capital inmovilizado del **${immobilizedPct.toFixed(1)}%** y minimizar la pérdida de ventas del **${salesLossPct.toFixed(1)}%**.`;
+                    healthyText = `Con un **${healthyPct.toFixed(1)}%**, superamos el promedio del sector. Nuestras estrategias de compra y venta son en su mayoría correctas.`;
+                    immobilizedText = `El **${immobilizedPct.toFixed(1)}%** es manejable, pero podemos mejorar la rentabilidad al identificar y liquidar los productos menos populares.`;
+                    salesLossText = `El **${salesLossPct.toFixed(1)}%** es bajo, lo que demuestra una buena gestión de la reposición. El objetivo ahora es afinar el pronóstico para acercarnos a cero.`;
+                    plan = `El enfoque debe ser la **optimización fina**. Se recomienda analizar los productos de "Lenta Rotación" para decidir si se mantienen en catálogo o se liquidan, y revisar los patrones de venta de los productos en "Riesgo de Quiebre" para ajustar sus niveles de stock de seguridad.`;
+                } else {
+                    status = `✅ **Estado General: EXCELENTE**`;
+                    summary = `¡Felicidades! El análisis actual de nuestro inventario revela un estado **excelente**. Con un **${healthyPct.toFixed(1)}%** de nuestro stock rotando de manera óptima, la gestión de inventario es un punto fuerte del negocio. La pérdida de ventas (**${salesLossPct.toFixed(1)}%**) y el capital inmovilizado (**${immobilizedPct.toFixed(1)}%**) se encuentran en niveles mínimos.`;
+                    healthyText = `Nuestro **${healthyPct.toFixed(1)}%** está muy por encima del promedio del sector, lo que nos da una ventaja competitiva significativa.`;
+                    immobilizedText = `El **${immobilizedPct.toFixed(1)}%** es residual y no representa un riesgo financiero.`;
+                    salesLossText = `Con un **${salesLossPct.toFixed(1)}%**, nuestra capacidad para satisfacer la demanda de los clientes es casi perfecta.`;
+                    plan = `El objetivo es **mantener y capitalizar este excelente rendimiento**. Se recomienda analizar las estrategias que nos han llevado a este estado para replicarlas en futuras líneas de productos.`;
+                }
+
+                const formatBold = (text) => text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+                const reportHTML = `
+                    <div class="space-y-4">
+                        <h3 class="text-xl font-bold text-gray-800">${formatBold(status)}</h3>
+                        <p class="text-base">${formatBold(summary)}</p>
+                    </div>
+                    <hr class="my-6">
+                    <div>
+                        <h4 class="text-lg font-semibold text-gray-800 mb-3">Análisis Detallado por Métrica Clave</h4>
+                        <div class="space-y-4">
+                            <div>
+                                <p class="font-semibold"><span class="text-green-500">🟢</span> Inventario Saludable: ${healthyPct.toFixed(1)}%</p>
+                                <p class="text-sm ml-6">${formatBold(healthyText)}</p>
+                            </div>
+                            <div>
+                                <p class="font-semibold"><span class="text-yellow-500">🟡</span> Capital Inmovilizado: ${immobilizedPct.toFixed(1)}%</p>
+                                <p class="text-sm ml-6">${formatBold(immobilizedText)}</p>
+                            </div>
+                            <div>
+                                <p class="font-semibold"><span class="text-red-500">🔴</span> Pérdida de Ventas: ${salesLossPct.toFixed(1)}%</p>
+                                <p class="text-sm ml-6">${formatBold(salesLossText)}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <hr class="my-6">
+                    <div>
+                        <h4 class="text-lg font-semibold text-gray-800 mb-3">Plan de Acción Recomendado</h4>
+                        <p class="text-base">${formatBold(plan)}</p>
+                    </div>
+                `;
+
+                diagnosisModalBody.innerHTML = reportHTML;
+                diagnosisModalOverlay.classList.add('visible');
+            };
+
+
             // --- Inicialización del Dashboard ---
             const initializeDashboard = async () => {
                 initializeTopProductsChart();
@@ -802,13 +951,51 @@
                 salesTrendStartDate.addEventListener('change', fetchSalesTrendData);
                 salesTrendEndDate.addEventListener('change', fetchSalesTrendData);
 
+                // Listeners para el nuevo modal
+                diagnosisTriggerBtn.addEventListener('click', generateAndShowDiagnosis);
+                diagnosisModalClose.addEventListener('click', () => diagnosisModalOverlay.classList.remove('visible'));
+
+                // Listener para el botón de exportar PDF
+                exportCriticalInventoryBtn.addEventListener('click', async () => {
+                    const btn = exportCriticalInventoryBtn;
+                    btn.disabled = true;
+                    btn.innerHTML = `<svg class="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Exportando...`;
+
+                    try {
+                        const response = await fetch('/api/actions/export/critical_inventory_pdf');
+                        if (!response.ok) {
+                            throw new Error('Error al generar el PDF.');
+                        }
+                        const blob = await response.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.style.display = 'none';
+                        a.href = url;
+                        const date = new Date().toISOString().slice(0, 10);
+                        a.download = `informe-inventario-critico-${date}.pdf`;
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        a.remove();
+                    } catch (error) {
+                        console.error('Error al exportar PDF:', error);
+                        alert('No se pudo generar el informe en PDF. Inténtelo de nuevo.');
+                    } finally {
+                        btn.disabled = false;
+                        btn.innerHTML = `<svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg> Exportar Informe de Inventario Crítico (PDF)`;
+                    }
+                });
+
+
                 const closeModal = () => {
                     infoModalOverlay.classList.remove('visible');
                     kpiDetailsModalOverlay.classList.remove('visible');
+                    diagnosisModalOverlay.classList.remove('visible'); // Asegurarse de que también se cierre
                 }
                 document.addEventListener('keydown', (e) => { if (e.key === "Escape") closeModal(); });
                 infoModalOverlay.addEventListener('click', (e) => { if (e.target === infoModalOverlay) closeModal(); });
                 kpiDetailsModalOverlay.addEventListener('click', (e) => { if (e.target === kpiDetailsModalOverlay) closeModal(); });
+                diagnosisModalOverlay.addEventListener('click', (e) => { if (e.target === diagnosisModalOverlay) closeModal(); });
             };
 
             initializeDashboard();

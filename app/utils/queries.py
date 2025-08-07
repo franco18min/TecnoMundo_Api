@@ -4,7 +4,7 @@ from typing import Tuple, List, Any
 def get_sales_query(category: str = None) -> Tuple[str, List[Any]]:
     """
     Construye la consulta SQL para ventas, uniendo con la tabla de productos
-    para poder filtrar por categoría y obtener el nombre del producto.
+    y excluyendo siempre la categoría 'Servicio Tecnico' de forma case-insensitive.
     """
     base_query = """
     SELECT
@@ -18,27 +18,28 @@ def get_sales_query(category: str = None) -> Tuple[str, List[Any]]:
     LEFT JOIN workspace.tecnomundo_data_gold.dim_products p ON s.codigo_producto = p.codigo_producto
     """
     params = []
-    # Se añade un WHERE para filtrar por categoría si es necesario, y siempre se excluye 'Servicio Tecnico' de este análisis.
+    # CORRECCIÓN: Usar LOWER() para una comparación case-insensitive.
     if category and category.lower() != 'all':
-        base_query += " WHERE p.categoria = ? AND p.categoria != 'Servicio Tecnico'"
+        base_query += " WHERE p.categoria = ? AND LOWER(p.categoria) != 'servicio tecnico'"
         params.append(category)
     else:
-        base_query += " WHERE p.categoria != 'Servicio Tecnico' OR p.categoria IS NULL"
+        base_query += " WHERE (LOWER(p.categoria) != 'servicio tecnico' OR p.categoria IS NULL)"
 
     return base_query, params
 
 
 def get_categories_query() -> str:
     """
-    Construye la consulta SQL para obtener la lista de categorías únicas.
+    Construye la consulta SQL para obtener la lista de categorías únicas,
+    excluyendo 'Servicio Tecnico' de forma case-insensitive.
     """
-    return "SELECT DISTINCT categoria FROM workspace.tecnomundo_data_gold.dim_products WHERE categoria IS NOT NULL AND categoria != 'Servicio Tecnico' ORDER BY categoria"
+    return "SELECT DISTINCT categoria FROM workspace.tecnomundo_data_gold.dim_products WHERE categoria IS NOT NULL AND LOWER(categoria) != 'servicio tecnico' ORDER BY categoria"
 
 
 def get_inventory_query(category: str = None) -> Tuple[str, List[Any]]:
     """
-    Construye la consulta SQL para el análisis de inventario.
-    Usa '?' como marcador de posición para los parámetros.
+    Construye la consulta SQL para el análisis de inventario,
+    excluyendo siempre la categoría 'Servicio Tecnico' de forma case-insensitive.
     """
     params = []
     query = """
@@ -76,7 +77,7 @@ def get_inventory_query(category: str = None) -> Tuple[str, List[Any]]:
         COALESCE(s30.unidades_vendidas_30d, 0) as unidades_vendidas_30d
     FROM LatestStock ls
     LEFT JOIN SalesLast30Days s30 ON ls.codigo_producto = s30.codigo_producto
-    WHERE ls.rn = 1 AND ls.categoria != 'Servicio Tecnico'
+    WHERE ls.rn = 1 AND LOWER(ls.categoria) != 'servicio tecnico'
     """
 
     if category:
@@ -89,7 +90,7 @@ def get_inventory_query(category: str = None) -> Tuple[str, List[Any]]:
 def get_sales_date_range_query() -> str:
     """
     Obtiene la fecha mínima y máxima de todas las ventas de productos,
-    excluyendo la categoría 'Servicio Tecnico'.
+    excluyendo la categoría 'Servicio Tecnico' de forma case-insensitive.
     """
     return """
     SELECT
@@ -97,14 +98,14 @@ def get_sales_date_range_query() -> str:
         MAX(CAST(s.fecha AS DATE)) as max_date
     FROM workspace.tecnomundo_data_gold.fact_sales s
     LEFT JOIN workspace.tecnomundo_data_gold.dim_products p ON s.codigo_producto = p.codigo_producto
-    WHERE p.categoria != 'Servicio Tecnico' OR p.categoria IS NULL
+    WHERE LOWER(p.categoria) != 'servicio tecnico' OR p.categoria IS NULL
     """
 
 
 def get_sales_trend_query(start_date: str, end_date: str) -> Tuple[str, List[Any]]:
     """
     Obtiene la tendencia de ventas agregada por día para un rango de fechas,
-    excluyendo la categoría 'Servicio Tecnico'.
+    excluyendo la categoría 'Servicio Tecnico' de forma case-insensitive.
     """
     query = """
     SELECT
@@ -113,7 +114,7 @@ def get_sales_trend_query(start_date: str, end_date: str) -> Tuple[str, List[Any
     FROM workspace.tecnomundo_data_gold.fact_sales s
     LEFT JOIN workspace.tecnomundo_data_gold.dim_products p ON s.codigo_producto = p.codigo_producto
     WHERE (CAST(s.fecha AS DATE) BETWEEN ? AND ?)
-    AND (p.categoria != 'Servicio Tecnico' OR p.categoria IS NULL)
+    AND (LOWER(p.categoria) != 'servicio tecnico' OR p.categoria IS NULL)
     GROUP BY CAST(s.fecha AS DATE)
     ORDER BY fecha_venta ASC
     """

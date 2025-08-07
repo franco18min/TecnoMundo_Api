@@ -1,11 +1,14 @@
-from flask import Blueprint, render_template, jsonify, request, abort
+from flask import Blueprint, render_template, jsonify, request, abort, send_file
 from app.services.dashboard_service import DashboardService
+from app.services.pdf_service import PDFService
 from .extensions import cache
 import logging
 from datetime import datetime
 
 api_bp = Blueprint('api', __name__, template_folder='templates', static_folder='static')
+actions_bp = Blueprint('actions', __name__)  # Nuevo Blueprint para acciones
 dashboard_service = DashboardService()
+pdf_service = PDFService()
 logger = logging.getLogger(__name__)
 
 
@@ -74,14 +77,9 @@ def get_inventory_health_report():
         return jsonify({"error": "Error interno del servidor"}), 500
 
 
-# --- NUEVOS ENDPOINTS ---
-
 @api_bp.route('/reports/sales_date_range')
-@cache.cached(timeout=3600)  # Cachear por 1 hora
+@cache.cached(timeout=3600)
 def get_sales_date_range():
-    """
-    Endpoint para obtener el rango de fechas disponibles para el informe de tendencias.
-    """
     try:
         date_range = dashboard_service.get_sales_date_range()
         if date_range:
@@ -96,9 +94,6 @@ def get_sales_date_range():
 @api_bp.route('/reports/sales_trend')
 @cache.cached(timeout=300, query_string=True)
 def get_sales_trend():
-    """
-    Endpoint para obtener los datos de la tendencia de ventas para un rango de fechas.
-    """
     start_date_str = request.args.get('start_date')
     end_date_str = request.args.get('end_date')
 
@@ -106,7 +101,6 @@ def get_sales_trend():
         abort(400, description="Los parámetros 'start_date' y 'end_date' son requeridos.")
 
     try:
-        # Validar formato de fecha
         datetime.strptime(start_date_str, '%Y-%m-%d')
         datetime.strptime(end_date_str, '%Y-%m-%d')
 
@@ -120,3 +114,32 @@ def get_sales_trend():
     except Exception as e:
         logger.error(f"Error en /reports/sales_trend: {e}")
         return jsonify({"error": "Error interno del servidor"}), 500
+
+
+# --- ENDPOINT DE EXPORTACIÓN MODIFICADO ---
+@actions_bp.route('/export/inventory_pdf', methods=['POST'])
+def export_inventory_pdf():
+    try:
+        filters = request.get_json()
+        if not filters or not filters.get('statuses'):
+            return jsonify({"error": "Debe seleccionar al menos un estado de inventario."}), 400
+
+        data = dashboard_service.get_filtered_inventory_data(filters)
+        if not data:
+            return jsonify({"error": "No se encontraron datos con los filtros seleccionados."}), 404
+
+        title = "Informe de Inventario Filtrado"  # Título genérico
+        pdf_buffer = pdf_service.create_inventory_list_pdf(data, title)
+
+        date_str = datetime.now().strftime("%Y-%m-%d")
+        filename = f"informe-inventario-{date_str}.pdf"
+
+        return send_file(
+            pdf_buffer,
+            as_attachment=True,
+            download_name=filename,
+            mimetype='application/pdf'
+        )
+    except Exception as e:
+        logger.error(f"Error al exportar el PDF de inventario: {e}")
+        return jsonify({"error": "Error interno del servidor al generar el PDF"}), 500

@@ -13,13 +13,9 @@ class DashboardService:
         self.connector = DatabricksConnector()
 
     def get_sales_analysis_data(self, category: str = None, top_n: int = 10):
-        """
-        Obtiene los datos para el análisis de ventas.
-        LÓGICA: Obtiene ventas y productos por separado y los une en pandas
-        para mayor robustez contra errores de JOIN en la base de datos.
-        """
         try:
             logger.info("Obteniendo datos de ventas y productos por separado...")
+            # CORRECCIÓN: Se eliminó la columna 'precio_unitario' que causaba el error, ya que no se utiliza en este análisis.
             sales_query = "SELECT codigo_producto, cantidad FROM workspace.tecnomundo_data_gold.fact_sales"
             products_query = "SELECT codigo_producto, nombre_del_producto, categoria FROM workspace.tecnomundo_data_gold.dim_products"
 
@@ -139,6 +135,33 @@ class DashboardService:
         except Exception as e:
             logger.error(f"Error al generar el informe de salud de inventario: {e}")
             return None
+
+    def get_critical_inventory_data(self):
+        """
+        Obtiene solo los productos en estado crítico para el informe PDF,
+        ordenados por criticidad.
+        """
+        try:
+            inventory_list = self.get_inventory_analysis_data()
+            if not inventory_list:
+                return []
+
+            critical_states = ["Sin Stock", "Riesgo de Quiebre", "Inventario Estancado"]
+            critical_inventory = [p for p in inventory_list if p['estado'] in critical_states]
+
+            if not critical_inventory:
+                return []
+
+            # Convertir a DataFrame para ordenar por estado de criticidad
+            df_critical = pd.DataFrame(critical_inventory)
+            status_order = pd.CategoricalDtype(categories=critical_states, ordered=True)
+            df_critical['estado'] = df_critical['estado'].astype(status_order)
+            df_critical.sort_values('estado', inplace=True)
+
+            return df_critical.to_dict(orient='records')
+        except Exception as e:
+            logger.error(f"Error al obtener datos de inventario crítico: {e}")
+            return []
 
     def get_sales_date_range(self):
         try:
